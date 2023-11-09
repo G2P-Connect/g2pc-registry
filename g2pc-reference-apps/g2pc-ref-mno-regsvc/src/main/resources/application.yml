@@ -1,0 +1,21 @@
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+server:
+  port: 9002
+  error:
+    include-message: always
+
+spring.data.redis:
+  repositories.enabled: false
+  host: localhost
+  password: 123456789
+  port: 6379
+
+client:
+  api_urls:
+    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
+    mobile_info_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
+
