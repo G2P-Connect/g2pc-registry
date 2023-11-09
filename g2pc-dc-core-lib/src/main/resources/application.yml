@@ -1,0 +1,47 @@
+
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=common
+    username: postgres
+    password: postgres
+    hikari:
+      data-source-properties:
+        stringtype: unspecified
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        useLocalSessionState: true
+        rewriteBatchedStatements: true
+        cacheResultSetMetadata: true
+        cacheServerConfiguration: true
+        maintainTimeStats: false
+        maximum-pool-size: 5
+        connection-timeout: 5000
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate.ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    generate-ddl: false
+
+spring.data.redis:
+  repositories.enabled: false
+  host: localhost
+  password: 123456789
+  port: 6379
+
+client:
+  api_urls:
+    mobile_info_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
+
+
