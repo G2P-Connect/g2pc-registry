@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "header schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "version" : {
+      "type": [ "string", "null" ]
+    },
+    "message_id": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "message_ts": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "action": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "sender_id": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "sender_uri": {
+      "type": ["string","null"]
+    },
+    "receiver_id": {
+      "type": ["string","null"]
+    },
+    "total_count": {
+      "type": "number"
+    },
+    "is_msg_encrypted": {
+      "type": ["boolean","null"],
+      "default": "false"
+    },
+    "meta": {
+      "type": [ "object", "null" ]
+    }
+  },
+  "required": ["message_id","message_ts","action","sender_id","total_count"],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
