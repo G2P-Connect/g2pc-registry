@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface FarmerInfoRepository extends JpaRepository<FarmerInfoEntity, Long> {
-    Optional<List<FarmerInfoEntity>> findBySeasonAndFarmerIdIn(String season,List<String> farmerId);
+    Optional<FarmerInfoEntity> findBySeasonAndFarmerId(String season, String farmerId);
 }

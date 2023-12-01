@@ -1,6 +1,7 @@
 package g2pc.ref.farmer.regsvc.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +14,7 @@ public class ObjectMapperConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
-                ResponseHeaderDTO.class);
+                ResponseHeaderDTO.class, HeaderDTO.class);
         return objectMapper;
     }
 }

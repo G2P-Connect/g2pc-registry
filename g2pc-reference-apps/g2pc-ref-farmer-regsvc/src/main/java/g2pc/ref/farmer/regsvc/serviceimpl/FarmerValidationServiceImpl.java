@@ -9,6 +9,7 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.message.request.RequestDTO;
+import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import g2pc.dp.core.lib.service.RequestHandlerService;
@@ -39,10 +40,11 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
 
     @Override
     public void validateRequestDTO(RequestDTO requestDTO) throws G2pcValidationException, JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
+       /* ObjectMapper objectMapper = new ObjectMapper();
+        RequestMessageDTO messageDTO=(RequestMessageDTO) requestDTO.getMessage();
         String queryString = new ObjectMapper()
                 .writerWithDefaultPrettyPrinter()
-                .writeValueAsString(requestDTO.getMessage().getSearchRequest().getSearchCriteria().getQuery());
+                .writeValueAsString(messageDTO.getSearchRequest().getSearchCriteria().getQuery());
         QueryFarmerDTO queryFarmerDTO = objectMapper.readerFor(QueryFarmerDTO.class).
                 readValue(queryString);
         validateQueryDto(queryFarmerDTO);
@@ -54,7 +56,7 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
                 readValue(headerString);
         requestHandlerService.validateRequestHeader(headerDTO);
         requestHandlerService.validateRequestMessage(requestDTO.getMessage());
-
+*/
 
     }
 
@@ -62,7 +64,7 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
     public void validateQueryDto(QueryFarmerDTO queryFarmerDTO) throws JsonProcessingException, G2pcValidationException {
 
         ObjectMapper objectMapper = new ObjectMapper();
-        log.info("Query object -> "+queryFarmerDTO);
+        log.info("Query object -> " + queryFarmerDTO);
         String queryString = new ObjectMapper()
                 .writerWithDefaultPrettyPrinter()
                 .writeValueAsString(queryFarmerDTO);
@@ -71,20 +73,20 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
                 .getResourceAsStream("schema/farmerQuerySchema.json");
         JsonNode jsonNode = objectMapper.readTree(queryString);
         JsonSchema schema = null;
-        if(schemaStreamQuery !=null){
-            schema  = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
+        if (schemaStreamQuery != null) {
+            schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
                     getSchema(schemaStreamQuery);
         }
         Set<ValidationMessage> errorMessage = schema.validate(jsonNode);
-        List<G2pcError> errorcombinedMessage= new ArrayList<>();
-        for (ValidationMessage error : errorMessage){
-            log.info("Validation errors" + error );
-            errorcombinedMessage.add(new G2pcError("",error.getMessage()));
+        List<G2pcError> errorcombinedMessage = new ArrayList<>();
+        for (ValidationMessage error : errorMessage) {
+            log.info("Validation errors" + error);
+            errorcombinedMessage.add(new G2pcError("", error.getMessage()));
 
         }
-        if (errorMessage.size()>0){
+        if (errorMessage.size() > 0) {
             throw new G2pcValidationException(errorcombinedMessage);
         }
     }
-    }
+}
 

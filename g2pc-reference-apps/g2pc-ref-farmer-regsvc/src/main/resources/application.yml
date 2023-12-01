@@ -4,7 +4,7 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=farmer
+    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=dp
     username: postgres
     password: postgres
     hikari:
@@ -32,6 +32,8 @@ spring:
     show-sql: false
     open-in-view: false
     generate-ddl: false
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
 server:
   port: 9001
@@ -48,3 +50,20 @@ client:
   api_urls:
     client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
 
+keycloak:
+  data-consumer:
+    url: "http://127.0.0.1:8081/auth/realms/data-consumer/protocol/openid-connect/token"
+    client-id: dc-client
+    client-secret: 82sb19hilQNGFBixW5AJInBHb0Xx2j6K
+  farmer:
+    admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+    get-client-url: http://127.0.0.1:8081/auth/admin/realms/dp-farmer/clients
+  realm: dp-farmer
+  url: http://127.0.0.1:8081/auth
+  admin:
+    client-id: admin-cli
+    client-secret: D50Wdnxc7JiQxCPi884aVDAiQy1nfPpq
+
+crypto:
+  support_encryption: false
+  support_signature: false
