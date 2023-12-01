@@ -4,23 +4,24 @@ import g2pc.core.lib.constants.CoreConstants;
 
 import java.io.IOException;
 
-public enum SortOrderEnum {
+public enum LocalesENUM {
 
-    ASC , DESC ;
+    EN, // English
+    HI; // Hindi
 
     public String toValue() {
         switch (this) {
-            case ASC: return "asc";
-            case DESC: return "desc";
+            case EN: return "en";
+            case HI: return "hi";
         }
         return null;
     }
 
-    public static SortOrderEnum forValue(String value) throws IOException {
+    public static LocalesENUM forValue(String value) throws IOException {
         if (null != value) {
             switch (value.toLowerCase()) {
-                case "asc": return ASC;
-                case "desc": return DESC;
+                case "en": return EN;
+                case "hi": return HI;
             }
         }
         throw new IOException(CoreConstants.CANNOT_DESERIALIZE_TYPE);

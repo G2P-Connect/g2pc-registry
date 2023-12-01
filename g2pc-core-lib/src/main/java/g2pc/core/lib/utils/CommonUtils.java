@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -19,19 +20,10 @@ public class CommonUtils {
      *
      * @return the current time stamp
      */
-    public String getCurrentTimeStamp()
-    {
-        return new SimpleDateFormat("yyyy-MM-dd HH.mm.ss").format(new java.util.Date());
-    }
-
-    /**
-     * Gets uuid.
-     *
-     * @return the uuid
-     */
-    public String getUUID()
-    {
-        return UUID.randomUUID().toString();
+    public static String getCurrentTimeStamp() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        Date date = new Date();
+        return dateFormat.format(date);
     }
 
 
@@ -40,10 +32,9 @@ public class CommonUtils {
      *
      * @return the input stream
      */
-    public InputStream getRequestHeaderString(){
-        InputStream schemaStream = CommonUtils.class.getClassLoader()
-                .getResourceAsStream("schema/headerschema.json");
-        return schemaStream;
+    public InputStream getRequestHeaderString() {
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/HeaderSchema.json");
     }
 
     /**
@@ -51,10 +42,9 @@ public class CommonUtils {
      *
      * @return the input stream
      */
-    public InputStream getRequestMessageString(){
-        InputStream schemaStream = CommonUtils.class.getClassLoader()
-                .getResourceAsStream("schema/messageschema.json");
-        return schemaStream;
+    public InputStream getRequestMessageString() {
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/MessageSchema.json");
     }
 
     /**
@@ -62,10 +52,9 @@ public class CommonUtils {
      *
      * @return the input stream
      */
-    public InputStream getResponseHeaderString(){
-        InputStream schemaStream = CommonUtils.class.getClassLoader()
-                .getResourceAsStream("schema/ResponseHeaderschema.json");
-        return schemaStream;
+    public InputStream getResponseHeaderString() {
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/ResponseHeaderSchema.json");
     }
 
     /**
@@ -73,13 +62,35 @@ public class CommonUtils {
      *
      * @return the input stream
      */
-    public InputStream getResponseMessageString(){
-        InputStream schemaStream = CommonUtils.class.getClassLoader()
-                .getResourceAsStream("schema/ResponseMessageschema.json");
-        return schemaStream;
+    public InputStream getResponseMessageString() {
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/ResponseMessageSchema.json");
     }
 
+    /**
+     * Generate unique ID
+     *
+     * @param idType whether transactionId, correlationId or referenceId
+     * @return unique ID
+     */
+    public static String generateUniqueId(String idType) {
+        String uniqueNumString = Long.toString(UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE);
+        return idType + uniqueNumString.substring(0, 3) +
+                "-" + uniqueNumString.substring(3, 7) +
+                "-" + uniqueNumString.substring(7, 11) +
+                "-" + uniqueNumString.substring(11, 15) +
+                "-" + uniqueNumString.substring(15);
+    }
 
-
-
+    /**
+     * Format a string
+     *
+     * @param data required
+     * @return formatted string
+     */
+    public static String formatString(String data) {
+        return data.replace("\\", "").
+                replace("\"{", "{").
+                replace("}\"", "}");
+    }
 }

@@ -7,12 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MessageDTO {
+public class ResponseMessageDTO {
 
     @JsonProperty("transaction_id")
     private String transactionId;
@@ -21,5 +23,5 @@ public class MessageDTO {
     private String correlationId;
 
     @JsonProperty("search_response")
-    private SearchResponseDTO searchResponse;
+    private List<SearchResponseDTO> searchResponse;
 }

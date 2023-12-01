@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 public class SortDTO {
 
     @JsonProperty("attribute_name")
-    private String attributeName;
+    private String attributeName="YOB";
 
     @JsonProperty("sort_order")
-    private String sortOrder;
+    private String sortOrder="asc";
 }

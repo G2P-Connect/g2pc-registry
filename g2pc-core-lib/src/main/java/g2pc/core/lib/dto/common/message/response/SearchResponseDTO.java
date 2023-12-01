@@ -1,6 +1,5 @@
 package g2pc.core.lib.dto.common.message.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,7 +29,7 @@ public class SearchResponseDTO {
     private DataDTO data;
 
     @JsonProperty("pagination")
-    private PaginationDTO pagination;
+    private ResponsePaginationDTO pagination;
 
     @JsonProperty("locale")
     private String locale;

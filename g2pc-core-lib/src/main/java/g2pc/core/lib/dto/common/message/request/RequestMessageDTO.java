@@ -4,15 +4,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MessageDTO {
+public class RequestMessageDTO {
 
     @JsonProperty("transaction_id")
     private String transactionId;
 
     @JsonProperty("search_request")
-    private SearchRequestDTO searchRequest;
+    private List<SearchRequestDTO> searchRequest;
 }

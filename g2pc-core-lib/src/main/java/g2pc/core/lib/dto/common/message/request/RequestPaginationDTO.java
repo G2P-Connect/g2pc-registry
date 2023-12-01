@@ -1,4 +1,4 @@
-package g2pc.core.lib.dto.common.message.response;
+package g2pc.core.lib.dto.common.message.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -8,14 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaginationDTO {
+public class RequestPaginationDTO {
 
     @JsonProperty("page_size")
-    private Integer pageSize;
+    private int pageSize = 100;
 
     @JsonProperty("page_number")
-    private Integer pageNumber;
-
-    @JsonProperty("total_count")
-    private Integer totalCount;
+    private int pageNumber = 1;
 }
