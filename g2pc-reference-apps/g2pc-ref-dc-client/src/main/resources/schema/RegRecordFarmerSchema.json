@@ -4,6 +4,8 @@
   "title": "Message schema",
   "description": "",
   "additionalProperties": false,
+  "type": "array",
+  "items" : [{
   "type": "object",
   "properties": {
     "farmer_id": {
@@ -29,7 +31,7 @@
     "payment_amount": {
       "type": "number"
     }
-  },
+  } } ] ,
   "definitions": {
     "nonEmptyString": {
       "type": "string",

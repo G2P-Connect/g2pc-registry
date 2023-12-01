@@ -32,6 +32,8 @@ spring:
     show-sql: false
     open-in-view: false
     generate-ddl: false
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
 server:
   port: 8000
@@ -44,10 +46,35 @@ spring.data.redis:
   password: 123456789
   port: 6379
 
-registry:
   api_urls:
     #farmer_search_api: "https://webhook.site/9043a6a4-1710-4af6-a7c6-25a55c6fc903"
     #mobile_search_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
     farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
     mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
 
+keycloak:
+  farmer:
+    url: "http://127.0.0.1:8081/auth/realms/dp-farmer/protocol/openid-connect/token"
+    clientId: "dp-farmer-client"
+    clientSecret: "EaXspS2bAcCmh5XrDWYrAzWP1Q1uQEIA"
+  mobile:
+    url: "http://127.0.0.1:8081/auth/realms/dp-mobile/protocol/openid-connect/token"
+    clientId: "dp-mobile-client"
+    clientSecret: "d544H8DTnZXREmX6jgmAfoFCeFXQ1oVV"
+  consumer:
+      admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+      get-client-url: http://127.0.0.1:8081/auth/admin/realms/data-consumer/clients
+  realm: data-consumer
+  url: http://127.0.0.1:8081/auth
+  admin:
+    client-id: admin-cli
+    client-secret: qCyT7XM24KGjb5j6ZU5YC68H5OiI6LRm
+
+crypto:
+  support_encryption: false
+  support_signature: false
+
+registry:
+  api_urls:
+    farmer_search_api: "http://localhost:9001/public/api/v1/registry/search"
+    mobile_search_api: "http://localhost:9002/public/api/v1/registry/search"
