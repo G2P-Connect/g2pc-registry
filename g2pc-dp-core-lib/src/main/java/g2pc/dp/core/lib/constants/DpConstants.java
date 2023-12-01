@@ -10,4 +10,6 @@ public class DpConstants {
     public static final String COMPLETED = "COMPLETED";
 
     public static final String SEARCH_REQUEST_RECEIVED = "Search request received";
+
+    public static final String RECORD_NOT_FOUND = "record_not_found";
 }

@@ -2,19 +2,33 @@ package g2pc.dp.core.lib.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
+import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
+import g2pc.core.lib.dto.common.message.request.SearchRequestDTO;
 import g2pc.core.lib.dto.common.message.response.DataDTO;
+import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
+import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
+import g2pc.core.lib.dto.common.security.TokenExpiryDto;
+import g2pc.dp.core.lib.entity.MsgTrackerEntity;
+import g2pc.dp.core.lib.entity.TxnTrackerEntity;
+import kong.unirest.UnirestException;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.List;
 
 public interface ResponseBuilderService {
 
-    String buildResponseMessage(DataDTO dataDTO) throws JsonProcessingException;
+    ResponseMessageDTO buildResponseMessage(String transactionId, List<SearchResponseDTO> searchResponseDTOList);
 
-    String buildResponseHeader(String headerInfoString, String messageString) throws JsonProcessingException;
+    ResponseHeaderDTO getResponseHeaderDTO(MsgTrackerEntity msgTrackerEntity);
 
-    String getResponse(String headerInfoString, String messageString, String algorithm) throws JsonProcessingException;
+    String buildResponseString(String signatureString, ResponseHeaderDTO responseHeaderDTO, ResponseMessageDTO messageDTO) throws JsonProcessingException;
 
-    String buildResponseString(String cacheKeySearchString, DataDTO dataDTO) throws JsonProcessingException;
+    Integer sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception;
 
-    void sendOnSearchResponse(String responseString, String uri);
+    public void saveToken(String cacheKey, TokenExpiryDto tokenExpiryDto) throws JsonProcessingException;
 
-    void updateRequestStatus(String cacheKey, String status, CacheDTO cacheDTO) throws JsonProcessingException;
+    public TokenExpiryDto getTokenFromCache(String clientId) throws JsonProcessingException;
+
+    public String getValidatedToken(String keyCloakUrl, String clientId, String clientSecret) throws IOException, UnirestException, ParseException;
 }
