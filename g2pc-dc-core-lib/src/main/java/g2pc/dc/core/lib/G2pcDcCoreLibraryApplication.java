@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan({"g2pc.core.lib"})
+@ComponentScan({"g2pc.dc.core.lib","g2pc.core.lib","g2pc.core.lib.security.service"})
 public class G2pcDcCoreLibraryApplication {
 
 	public static void main(String[] args) {

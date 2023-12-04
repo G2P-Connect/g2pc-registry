@@ -29,7 +29,7 @@ public class SearchCriteriaDTO {
     private List<SortDTO> sort;
 
     @JsonProperty("pagination")
-    private PaginationDTO pagination;
+    private RequestPaginationDTO pagination;
 
     @JsonProperty("consent")
     private ConsentDTO consent;

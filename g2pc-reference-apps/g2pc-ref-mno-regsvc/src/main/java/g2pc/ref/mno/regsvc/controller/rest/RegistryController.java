@@ -2,10 +2,21 @@ package g2pc.ref.mno.regsvc.controller.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
+import g2pc.core.lib.dto.common.header.HeaderDTO;
+import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
+import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
+import g2pc.core.lib.dto.common.message.request.MessageDTO;
 import g2pc.core.lib.dto.common.message.request.RequestDTO;
 import g2pc.core.lib.exceptionhandler.ErrorResponse;
+import g2pc.core.lib.exceptionhandler.ValidationErrorResponse;
+import g2pc.core.lib.exceptions.G2pHttpException;
+import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
+import g2pc.core.lib.security.BearerTokenUtil;
+import g2pc.core.lib.security.service.G2pEncryptDecrypt;
+import g2pc.core.lib.security.service.G2pTokenService;
 import g2pc.dp.core.lib.service.RequestHandlerService;
 import g2pc.ref.mno.regsvc.constants.Constants;
 import g2pc.ref.mno.regsvc.service.MobileValidationService;
@@ -15,7 +26,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,11 +49,40 @@ public class RegistryController {
      */
     @Autowired
     MobileValidationService mobileValidationService;
+    @Autowired
+    G2pEncryptDecrypt encryptDecrypt;
+
+    @Value("${keycloak.realm}")
+    private String keycloakRealm;
+
+    @Value("${keycloak.url}")
+    private String keycloakURL;
+
+    @Autowired
+    G2pTokenService g2pTokenService;
+
+    @Value("${keycloak.mobile.admin-url}")
+    private String masterAdminUrl;
+
+    @Value("${keycloak.mobile.get-client-url}")
+    private String getClientUrl;
+
+    @Value("${crypto.support_encryption}")
+    private String isEncrypt;
+
+    @Value("${crypto.support_signature}")
+    private String isSign;
+
+    @Value("${keycloak.admin.client-id}")
+    private String adminClientId;
+
+    @Value("${keycloak.admin.client-secret}")
+    private String adminClientSecret;
 
     /**
      * Get search request from DC
      *
-     * @param requestDTO required
+     * @param requestString required
      * @return Search request received acknowledgement
      * @throws JsonProcessingException the json processing exception
      * @throws ResponseStatusException the response status exception
@@ -53,10 +95,33 @@ public class RegistryController {
             @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/private/api/v1/registry/search")
-    public AcknowledgementDTO registerCandidateInformation(@RequestBody RequestDTO requestDTO) throws JsonProcessingException, ResponseStatusException, G2pcValidationException  {
+    public AcknowledgementDTO registerCandidateInformation(@RequestBody String requestString) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        String cacheKey = Constants.CACHE_KEY_STRING + requestDTO.getMessage().getTransactionId();
+        String token = BearerTokenUtil.getBearerTokenHeader();
+        String introspect = keycloakURL+"/realms/"+keycloakRealm+"/protocol/openid-connect/token/introspect";
+        ResponseEntity<String> introspectResponse =  g2pTokenService.getInterSpectResponse(introspect,token,adminClientId,adminClientSecret);
+        if(introspectResponse.getStatusCode().value()==401){
+            throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(),introspectResponse.getBody()));
+        }
+        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token))){
+            throw new G2pHttpException(new G2pcError("err.request.unauthorized","User is not authorized"));
+        }
+        objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                ResponseHeaderDTO.class, HeaderDTO.class);
 
+        RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
+                readValue(requestString);
+        MessageDTO messageDTO = null;
+        if(isEncrypt.equals("true")){
+            String messageString = requestDTO.getMessage();
+            String deprecatedMessageString = encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+            messageDTO  = objectMapper.readerFor(MessageDTO.class).
+                    readValue(deprecatedMessageString);
+        }else{
+            messageDTO  = objectMapper.readerFor(MessageDTO.class).
+                    readValue(requestDTO.getMessage());
+        }
+        String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
 
         try {
             mobileValidationService.validateRequestDTO(requestDTO);
@@ -74,6 +139,7 @@ public class RegistryController {
         }
     }
 
+
     /**
      * Handle validation exception error response.
      *
@@ -83,11 +149,25 @@ public class RegistryController {
     @ExceptionHandler(value
             = G2pcValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse
+    public ValidationErrorResponse
     handleValidationException(
             G2pcValidationException ex)
     {
-        return new ErrorResponse(
+        return new ValidationErrorResponse(
                 ex.getG2PcErrorList());
+    }
+
+    /**
+     * Handle validation exception error response.
+     *
+     * @param ex the ValidationException
+     * @return the error response
+     */
+    @ExceptionHandler(value = G2pHttpException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse handleG2pHttpStatusException(G2pHttpException ex)
+    {
+        return new ErrorResponse(ex.getG2PcError());
+
     }
 }

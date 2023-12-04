@@ -9,7 +9,7 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.response.MessageDTO;
+import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import g2pc.core.lib.utils.CommonUtils;
@@ -45,7 +45,7 @@ public class ResponseHandlerServiceImpl implements ResponseHandlerService {
         CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(redisTemplate.opsForValue().get(cacheKey));
 
         cacheDTO.setStatus(DcConstants.COMPLETED);
-        cacheDTO.setLastUpdatedDate(commonUtils.getCurrentTimeStamp());
+        cacheDTO.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
 
         ValueOperations<String, String> val = redisTemplate.opsForValue();
         val.set(cacheKey, new ObjectMapper().writeValueAsString(cacheDTO));
@@ -79,7 +79,7 @@ public class ResponseHandlerServiceImpl implements ResponseHandlerService {
     }
 
     @Override
-    public void validateResponseMessage(MessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException {
+    public void validateResponseMessage(ResponseMessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String messageString = new ObjectMapper()

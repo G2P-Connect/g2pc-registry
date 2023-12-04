@@ -17,15 +17,10 @@ public class Constants {
 
     public static final String COMPLETED = "COMPLETED";
 
-    public static final String CACHE_KEY_STRING = "req*";
-
     public static final String ON_SEARCH_RESPONSE_RECEIVED = "On-Search response received successfully";
 
-    public static final String PAID_FARMER = "paid_farmer";
+    //registry name constants
+    public static final String FARMER_REGISTRY = "farmer_registry";
 
-    public static final String IS_REGISTERED = "is_registered";
-
-    public static final String FARMER_CACHE_STRING = "farmer-";
-
-    public static final String MOBILE_CACHE_STRING = "mno-";
+    public static final String MOBILE_REGISTRY = "mobile_registry";
 }

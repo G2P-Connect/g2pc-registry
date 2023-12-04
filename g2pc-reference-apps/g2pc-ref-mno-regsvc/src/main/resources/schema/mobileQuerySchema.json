@@ -17,7 +17,7 @@
           "$ref": "#/definitions/nonEmptyString"
         },
         "mobile_number": {
-          "type": "array",
+          "type": ["string"],
           "items": {
             "$ref": "#/definitions/nonEmptyString",
             "type": "string"

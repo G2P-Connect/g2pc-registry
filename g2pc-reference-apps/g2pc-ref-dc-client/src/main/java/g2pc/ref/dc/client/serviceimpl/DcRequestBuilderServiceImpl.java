@@ -1,50 +1,36 @@
 package g2pc.ref.dc.client.serviceimpl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
-import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.message.request.*;
-import g2pc.core.lib.enums.SortOrderEnum;
+import g2pc.core.lib.enums.HeaderStatusENUM;
 import g2pc.core.lib.utils.CommonUtils;
 import g2pc.dc.core.lib.service.RequestBuilderService;
+import g2pc.dc.core.lib.service.TxnTrackerService;
+import g2pc.ref.dc.client.config.RegistryConfig;
 import g2pc.ref.dc.client.constants.Constants;
-import g2pc.ref.dc.client.dto.farmer.request.QueryParamsFarmerDTO;
-import g2pc.ref.dc.client.dto.mobile.request.QueryParamsMobileDTO;
-import g2pc.ref.dc.client.dto.payload.PayloadDTO;
-import g2pc.ref.dc.client.dto.payload.PayloadDataDTO;
 import g2pc.ref.dc.client.entity.RegistryTransactionsEntity;
 import g2pc.ref.dc.client.repository.RegistryTransactionsRepository;
 import g2pc.ref.dc.client.service.DcRequestBuilderService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
-
-    @Value("${registry.api_urls.farmer_search_api}")
-    private String farmerSearchURL;
-
-    @Value("${registry.api_urls.mobile_search_api}")
-    private String mobileSearchURL;
-
-    @Autowired
-    private CommonUtils commonUtils;
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
 
     @Autowired
     private RegistryTransactionsRepository registryTransactionsRepository;
@@ -52,104 +38,116 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     @Autowired
     private RequestBuilderService requestBuilderService;
 
+    @Autowired
+    RegistryConfig registryConfig;
+
+    @Autowired
+    TxnTrackerService txnTrackerService;
+
+    /**
+     * Create initial transaction in DB
+     *
+     * @param transactionId unique transaction id
+     */
     @Override
-    public List<QueryDTO> createQuery(String payloadString) throws JsonProcessingException {
-        PayloadDTO payloadDTO = new ObjectMapper().readValue(payloadString, PayloadDTO.class);
-        List<QueryDTO> queryDTOList = new ArrayList<>();
-        PayloadDataDTO payloadDataDTO = payloadDTO.getData();
-        if (StringUtils.isNotEmpty(payloadDataDTO.getFarmerId())) {
-            QueryParamsFarmerDTO queryParamsDTO = new QueryParamsFarmerDTO();
-            queryParamsDTO.setFarmerId(Collections.singletonList(payloadDataDTO.getFarmerId()));
-            queryParamsDTO.setSeason(payloadDataDTO.getSeason());
-
-            QueryDTO queryDTO = new QueryDTO();
-            queryDTO.setQueryName(Constants.PAID_FARMER);
-            queryDTO.setQueryParams(queryParamsDTO);
-            queryDTOList.add(queryDTO);
-        }
-        if (StringUtils.isNotEmpty(payloadDataDTO.getMobileNumber())) {
-            QueryParamsMobileDTO queryParamsDTO = new QueryParamsMobileDTO();
-            queryParamsDTO.setMobileNumber(Collections.singletonList(payloadDataDTO.getMobileNumber()));
-            queryParamsDTO.setSeason(payloadDataDTO.getSeason());
-
-            QueryDTO queryDTO = new QueryDTO();
-            queryDTO.setQueryName(Constants.IS_REGISTERED);
-            queryDTO.setQueryParams(queryParamsDTO);
-            queryDTOList.add(queryDTO);
-        }
-        return queryDTOList;
-    }
-
-    @Override
-    public AcknowledgementDTO generateRequest(String payloadString) throws JsonProcessingException {
-        String requestString = "";
-        PayloadDTO payloadDTO = new ObjectMapper().readValue(payloadString, PayloadDTO.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        String transactionId = "123456789";
-        CacheDTO cacheDTO = requestBuilderService.createCache(objectMapper.writeValueAsString(payloadDTO.getData()), "RECEIVED");
-        requestBuilderService.saveCache(cacheDTO, "initial-" + transactionId);
-
+    public void createInitialTransactionInDB(String transactionId) {
         Optional<RegistryTransactionsEntity> entityOptional = registryTransactionsRepository.getByTransactionId(transactionId);
         if (entityOptional.isEmpty()) {
             RegistryTransactionsEntity entity = new RegistryTransactionsEntity();
             entity.setTransactionId(transactionId);
             registryTransactionsRepository.save(entity);
         }
+    }
 
-        List<QueryDTO> queryDTOList = createQuery(objectMapper.writeValueAsString(payloadDTO));
-        for (QueryDTO queryDTO : queryDTOList) {
-            SearchCriteriaDTO searchCriteriaDTO = getSearchCriteriaDTO(queryDTO, queryDTO.getQueryName());
-
-            requestString = requestBuilderService.buildRequest(searchCriteriaDTO, transactionId);
-            if (queryDTO.getQueryName().equals(Constants.PAID_FARMER)) {
-                requestBuilderService.sendRequest(requestString, farmerSearchURL);
-
-                cacheDTO = requestBuilderService.createCache(requestString, Constants.PENDING);
-                requestBuilderService.saveCache(cacheDTO, Constants.FARMER_CACHE_STRING + transactionId);
-            } else if (queryDTO.getQueryName().equals(Constants.IS_REGISTERED)) {
-                requestBuilderService.sendRequest(requestString, mobileSearchURL);
-
-                cacheDTO = requestBuilderService.createCache(requestString, Constants.PENDING);
-                requestBuilderService.saveCache(cacheDTO, Constants.MOBILE_CACHE_STRING + transactionId);
-            }
-        }
+    /**
+     * Create, save and send a request from payload
+     *
+     * @param payloadMapList required query params data
+     * @return acknowledgement of the request
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         acknowledgementDTO.setMessage(Constants.SEARCH_REQUEST_RECEIVED);
-        acknowledgementDTO.setStatus("RECEIVED");
+        acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+
+        String transactionId = CommonUtils.generateUniqueId("T");
+
+        txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
+
+        createInitialTransactionInDB(transactionId);
+
+        List<Map<String, Object>> queryMapList = requestBuilderService.createQueryMap(payloadMapList, registryConfig.getQueryParamsConfig().entrySet());
+        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+            List<Map<String, Object>> queryMapFilteredList = queryMapList.stream()
+                    .map(map -> map.entrySet().stream()
+                            .filter(entry -> entry.getKey().equals(configEntryMap.getKey()))
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))).toList();
+
+            Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(configEntryMap.getKey());
+            List<SearchCriteriaDTO> searchCriteriaDTOList = new ArrayList<>();
+            for (Map<String, Object> queryParamsMap : queryMapFilteredList) {
+                SearchCriteriaDTO searchCriteriaDTO = requestBuilderService.getSearchCriteriaDTO(queryParamsMap, registrySpecificConfigMap);
+                searchCriteriaDTOList.add(searchCriteriaDTO);
+            }
+            String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId);
+            txnTrackerService.saveRequestTransaction(requestString,
+                    registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
+            log.info("requestString = {}", requestString);
+            //sendRequestDemo(requestString, registrySpecificConfigMap.get("url").toString());
+           /* requestBuilderService.sendRequest(requestString,
+                    registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.CLIENT_ID).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.CLIENT_SECRET).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString());*/
+        }
         return acknowledgementDTO;
     }
 
+    /**
+     * Create a payload for request
+     *
+     * @param payloadFile csv file containing query params data
+     * @return acknowledgement of the request
+     */
     @Override
-    public SearchCriteriaDTO getSearchCriteriaDTO(QueryDTO queryDTO, String regType) {
-        PaginationDTO paginationDTO = new PaginationDTO(10, 1);
-        ConsentDTO consentDTO = new ConsentDTO();
-        AuthorizeDTO authorizeDTO = new AuthorizeDTO();
-        List<SortDTO> sortDTOList = new ArrayList<>();
-        SortDTO sortDTO = new SortDTO();
-        if (queryDTO.getQueryName().equals("paid_farmer")) {
-            sortDTO.setAttributeName("farmer_id");
-            sortDTO.setSortOrder(SortOrderEnum.ASC.toValue());
-        } else if (queryDTO.getQueryName().equals("is_registered")) {
-            sortDTO.setAttributeName("mobile_number");
-            sortDTO.setSortOrder(SortOrderEnum.ASC.toValue());
-        }
-        sortDTOList.add(sortDTO);
+    public AcknowledgementDTO generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        acknowledgementDTO.setMessage(Constants.SEARCH_REQUEST_RECEIVED);
+        acknowledgementDTO.setStatus("RECEIVED");
 
-        SearchCriteriaDTO searchCriteriaDTO = new SearchCriteriaDTO();
-        searchCriteriaDTO.setVersion("1.0.0");
-        if (queryDTO.getQueryName().equals("paid_farmer")) {
-            searchCriteriaDTO.setRegType("ns:FARMER_REGISTRY");
-        } else if (queryDTO.getQueryName().equals("is_registered")) {
-            searchCriteriaDTO.setRegType("ns:MOBILE_REGISTRY");
+        Reader reader = new BufferedReader(new InputStreamReader(payloadFile.getInputStream()));
+        CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
+        List<Map<String, Object>> payloadMapList = getPayloadMapList(csvParser);
+        acknowledgementDTO = generateRequest(payloadMapList);
+        return acknowledgementDTO;
+    }
+
+    private static List<Map<String, Object>> getPayloadMapList(CSVParser csvParser) {
+        List<CSVRecord> csvRecordList = csvParser.getRecords();
+        CSVRecord headerRecord = csvRecordList.get(0);
+        List<String> headerList = new ArrayList<>();
+        for (int i = 0; i < headerRecord.size(); i++) {
+            headerList.add(headerRecord.get(i));
         }
-        searchCriteriaDTO.setRegSubType("");
-        searchCriteriaDTO.setQueryType("namedQuery");
-        searchCriteriaDTO.setQuery(queryDTO);
-        searchCriteriaDTO.setSort(sortDTOList);
-        searchCriteriaDTO.setPagination(paginationDTO);
-        searchCriteriaDTO.setConsent(consentDTO);
-        searchCriteriaDTO.setAuthorize(authorizeDTO);
-        return searchCriteriaDTO;
+        List<Map<String, Object>> payloadMapList = new ArrayList<>();
+        for (int i = 1; i < csvRecordList.size(); i++) {
+            CSVRecord csvRecord = csvRecordList.get(i);
+            Map<String, Object> payloadMap = new HashMap<>();
+            for (int j = 0; j < headerRecord.size(); j++) {
+                payloadMap.put(headerList.get(j), csvRecord.get(j));
+            }
+            payloadMapList.add(payloadMap);
+        }
+        return payloadMapList;
+    }
+
+    private void sendRequestDemo(String requestString, String uri) {
+        HttpResponse<String> response = Unirest.post(uri)
+                .body(requestString)
+                .asString();
+        log.info("request send response status = {}", response.getStatus());
     }
 }
+

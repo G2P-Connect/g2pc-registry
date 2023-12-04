@@ -19,5 +19,5 @@ public class ResponseDTO {
     private HeaderDTO header;
 
     @JsonProperty("message")
-    private MessageDTO message;
+    private Object message;
 }

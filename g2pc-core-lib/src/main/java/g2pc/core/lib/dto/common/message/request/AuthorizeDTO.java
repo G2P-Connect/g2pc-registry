@@ -1,9 +1,16 @@
 package g2pc.core.lib.dto.common.message.request;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import g2pc.core.lib.dto.common.PurposeDTO;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuthorizeDTO {
+
+    private String ts;
+
+    private PurposeDTO purpose;
 }

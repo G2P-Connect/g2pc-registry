@@ -6,22 +6,19 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * The type Error response.
- */
 @Data
 @NoArgsConstructor
 public class ErrorResponse {
-    private List<G2pcError> g2PcErrors;
+    private G2pcError g2PcError;
 
     /**
      * Instantiates a new Error response.
      *
-     * @param g2PcErrorList the error list
+     * @param g2PcError the error list
      */
-    public ErrorResponse(List<G2pcError> g2PcErrorList)
+    public ErrorResponse(G2pcError g2PcError)
     {
         super();
-        this.g2PcErrors = g2PcErrorList;
+        this.g2PcError = g2PcError;
     }
 }

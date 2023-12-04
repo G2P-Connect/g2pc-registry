@@ -1,6 +1,7 @@
 package g2pc.ref.farmer.regsvc.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import g2pc.core.lib.dto.common.message.request.QueryDTO;
 import g2pc.core.lib.dto.common.message.request.RequestDTO;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import g2pc.ref.farmer.regsvc.dto.request.QueryFarmerDTO;
@@ -17,7 +18,7 @@ public interface FarmerValidationService {
      * @throws G2pcValidationException     the validation exception
      * @throws JsonProcessingException the json processing exception
      */
-    void validateRequestDTO (RequestDTO requestDTO) throws G2pcValidationException, JsonProcessingException;
+    void validateRequestDTO (RequestDTO requestDTO) throws Exception;
 
     /**
      * Validate query dto.

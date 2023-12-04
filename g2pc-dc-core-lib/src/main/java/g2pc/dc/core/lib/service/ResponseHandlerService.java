@@ -2,7 +2,7 @@ package g2pc.dc.core.lib.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.response.MessageDTO;
+import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 
 /**
@@ -34,6 +34,6 @@ public interface ResponseHandlerService {
      * @throws G2pcValidationException the g 2 pc validation exception
      * @throws JsonProcessingException the json processing exception
      */
-    public void validateResponseMessage( MessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException;
+    public void validateResponseMessage( ResponseMessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException;
 
 }

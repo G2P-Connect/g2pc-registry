@@ -1,6 +1,6 @@
 package g2pc.core.lib.enums;
 
-import g2pc.core.lib.constants.Constants;
+import g2pc.core.lib.constants.CoreConstants;
 
 import java.io.IOException;
 
@@ -25,6 +25,6 @@ public enum QueryTypeEnum {
                 case "predicate":return PREDICATE;
             }
         }
-        throw new IOException(Constants.CANNOT_DESERIALIZE_TYPE);
+        throw new IOException(CoreConstants.CANNOT_DESERIALIZE_TYPE);
     }
 }

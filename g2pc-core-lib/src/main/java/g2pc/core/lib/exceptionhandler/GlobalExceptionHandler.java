@@ -22,9 +22,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value
                       = G2pcValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public @ResponseBody ErrorResponse
+    public @ResponseBody ValidationErrorResponse
     handleException(G2pcValidationException ex)
     {
-        return new ErrorResponse(ex.getG2PcErrorList());
+        return new ValidationErrorResponse(ex.getG2PcErrorList());
     }
 }

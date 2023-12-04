@@ -5,7 +5,7 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=common
+    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=dp
     username: postgres
     password: postgres
     hikari:
@@ -44,4 +44,6 @@ client:
   api_urls:
     mobile_info_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
 
-
+crypto:
+  support_encryption: false
+  support_signature: false

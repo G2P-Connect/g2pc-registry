@@ -14,7 +14,7 @@ import java.util.List;
 public class QueryParamsFarmerDTO {
 
     @JsonProperty("farmer_id")
-    private List<String> farmerId;
+    private String farmerId;
 
     @JsonProperty("season")
     private String season;

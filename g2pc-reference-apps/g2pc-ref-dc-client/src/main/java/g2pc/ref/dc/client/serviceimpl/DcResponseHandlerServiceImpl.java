@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.message.response.DataDTO;
-import g2pc.core.lib.dto.common.message.response.MessageDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseDTO;
+import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
 import g2pc.core.lib.utils.CommonUtils;
 import g2pc.dc.core.lib.service.ResponseHandlerService;
@@ -98,12 +98,12 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
     @Override
     public AcknowledgementDTO getResponse(ResponseDTO responseDTO) throws JsonProcessingException {
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
-
-        MessageDTO messageDTO = responseDTO.getMessage();
+        ObjectMapper objectMapper = new ObjectMapper();
+        ResponseMessageDTO messageDTO = objectMapper.convertValue(responseDTO.getMessage(), ResponseMessageDTO.class);
         String transactionId = messageDTO.getTransactionId();
-        SearchResponseDTO searchResponseDTO = messageDTO.getSearchResponse();
-
-        updateTransactionDbAndCache(transactionId, searchResponseDTO);
+        List<SearchResponseDTO> searchResponseDTO = messageDTO.getSearchResponse();
+        //TODO handle this update
+        //updateTransactionDbAndCache(transactionId, searchResponseDTO);
 
         acknowledgementDTO.setMessage(Constants.ON_SEARCH_RESPONSE_RECEIVED);
         acknowledgementDTO.setStatus(Constants.COMPLETED);

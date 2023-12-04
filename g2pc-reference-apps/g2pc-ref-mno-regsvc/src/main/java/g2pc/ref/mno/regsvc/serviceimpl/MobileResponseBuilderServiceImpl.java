@@ -2,6 +2,7 @@ package g2pc.ref.mno.regsvc.serviceimpl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.config.G2pUnirestHelper;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import g2pc.core.lib.dto.common.message.request.MessageDTO;
@@ -11,8 +12,8 @@ import g2pc.ref.mno.regsvc.dto.request.QueryParamsMobileDTO;
 import g2pc.ref.mno.regsvc.dto.response.RegRecordMobileDTO;
 import g2pc.ref.mno.regsvc.service.MobileResponseBuilderService;
 import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,8 @@ public class MobileResponseBuilderServiceImpl implements MobileResponseBuilderSe
     @Value("${client.api_urls.mobile_info_api}")
     String mobileInfoURL;
 
+    @Autowired
+    G2pUnirestHelper g2pUnirestHelper;
     /**
      * Get farmer records information string from API
      *
@@ -44,11 +47,9 @@ public class MobileResponseBuilderServiceImpl implements MobileResponseBuilderSe
         String queryParams = objectMapper.writeValueAsString(messageDTO.getSearchRequest().getSearchCriteria().getQuery().getQueryParams());
         QueryParamsMobileDTO queryParamsMobileDTO = objectMapper.readValue(queryParams, QueryParamsMobileDTO.class);
 
-        List<String> mobileNumbers = queryParamsMobileDTO.getMobileNumber();
-        String season = queryParamsMobileDTO.getSeason();
 
         String uri = mobileInfoURL;
-        HttpResponse<String> response = Unirest.post(uri)
+        HttpResponse<String> response = g2pUnirestHelper.g2pPost(uri)
                 .body(objectMapper.writeValueAsString(queryParamsMobileDTO))
                 .asString();
 

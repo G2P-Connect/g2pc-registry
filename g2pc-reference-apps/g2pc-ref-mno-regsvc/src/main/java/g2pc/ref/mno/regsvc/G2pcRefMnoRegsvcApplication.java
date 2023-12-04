@@ -3,11 +3,12 @@ package g2pc.ref.mno.regsvc;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
-@ComponentScan({"g2pc.core.lib", "g2pc.dp.core.lib", "g2pc.ref.mno.regsvc","g2pc.dp.core.lib.service"})
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class ,SecurityAutoConfiguration.class})
+@ComponentScan({"g2pc.core.lib", "g2pc.dp.core.lib", "g2pc.ref.mno.regsvc","g2pc.dp.core.lib.service","g2pc.core.lib.security.serviceImpl"})
 @EnableScheduling
 public class G2pcRefMnoRegsvcApplication {
 
