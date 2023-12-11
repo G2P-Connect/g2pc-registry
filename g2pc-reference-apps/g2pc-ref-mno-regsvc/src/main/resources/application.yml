@@ -8,9 +8,9 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp2?currentSchema=g2pc
+    url: not_set
     username: postgres
-    password: t3{gxm6J9Gq-RFV&`hY>5N
+    password: not_set
 
     hikari:
       data-source-properties:
@@ -52,8 +52,8 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: 3.109.26.38
-  password: abhilash@99223
+  host: not_set
+  password: not_set
   port: 6377
 
 client:
@@ -65,7 +65,7 @@ keycloak:
   data-consumer:
     url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
     client-id: dc-client
-    client-secret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+    client-secret: not_set
   mobile:
     admin-url: https://g2pc-dp2-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
     get-client-url: https://g2pc-dp2-lab.cdpi.dev/auth/admin/realms/dp-mobile/clients
@@ -74,11 +74,11 @@ keycloak:
   admin:
     realm:
       client-id: admin-cli
-      client-secret: bISeLIzCYnsaXd0w9NN5yoYQ5w4ofueR
+      client-secret: not_set
     client-id: admin-cli
-    client-secret: awR1cImNnsiOnBeWpZQWUfKFr1gOopBo
+    client-secret: not_set
     username: admin
-    password: Abhilash@9924
+    password: not_set
 
 crypto:
   consumer:

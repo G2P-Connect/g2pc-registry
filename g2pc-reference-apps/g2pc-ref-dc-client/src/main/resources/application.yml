@@ -9,9 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dc1?currentSchema=g2pc
+    url: not_set
     username: postgres
-    password: t3{gxm6J9Gq-RFV&`hY>5N
+    password: not_set
 
     hikari:
       data-source-properties:
@@ -67,11 +67,11 @@ keycloak:
   farmer:
     url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
     clientId: "dp-farmer-client"
-    clientSecret: "55VuMuin1T8xbYSUu5zAJAebA05tSwkX"
+    clientSecret: not_set
   mobile:
     url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
     clientId: "dp-mobile-client"
-    clientSecret: "d9yPYp8G2nYLh1ztdeqvdvtxEYqx63Xg"
+    clientSecret: not_set
   consumer:
     admin-url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
     get-client-url: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
@@ -80,11 +80,11 @@ keycloak:
   admin:
     realm:
       client-id: admin-cli
-      client-secret: vhqwFSij7JuzImzuCoWSQULx7FMnfijK
+      client-secret: not_set
     client-id: admin-cli
-    client-secret: bCfUQy4z4NKiiz82zScJdKGtbKbchkhs  # In realm In master admin-cli -> secret key
+    client-secret: not_set  # In realm In master admin-cli -> secret key
     username: admin
-    password: Abhilash@9922
+    password: not_set
 
 crypto:
   farmer:
