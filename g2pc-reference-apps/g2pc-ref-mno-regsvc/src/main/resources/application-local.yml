@@ -8,10 +8,9 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp2?currentSchema=g2pc
+    url: jdbc:postgresql://localhost:5432/g2pc?currentSchema=dp
     username: postgres
-    password: t3{gxm6J9Gq-RFV&`hY>5N
-
+    password: postgres
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -52,9 +51,9 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: 3.109.26.38
-  password: abhilash@99223
-  port: 6377
+  host: localhost
+  password: 123456789
+  port: 6379
 
 client:
   api_urls:
@@ -63,22 +62,17 @@ client:
 
 keycloak:
   data-consumer:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
+    url: "http://127.0.0.1:8081/auth/realms/data-consumer/protocol/openid-connect/token"
     client-id: dc-client
-    client-secret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+    client-secret: 82sb19hilQNGFBixW5AJInBHb0Xx2j6K
   mobile:
-    admin-url: https://g2pc-dp2-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dp2-lab.cdpi.dev/auth/admin/realms/dp-mobile/clients
+    admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+    get-client-url: http://127.0.0.1:8081/auth/admin/realms/dp-mobile/clients
   realm: dp-mobile
-  url: https://g2pc-dp2-lab.cdpi.dev/auth
+  url: http://127.0.0.1:8081/auth
   admin:
-    realm:
-      client-id: admin-cli
-      client-secret: bISeLIzCYnsaXd0w9NN5yoYQ5w4ofueR
     client-id: admin-cli
-    client-secret: awR1cImNnsiOnBeWpZQWUfKFr1gOopBo
-    username: admin
-    password: Abhilash@9924
+    client-secret: eJ7bErtDvu0D5yXP37zLjAgGC28S1ofT
 
 crypto:
   consumer:

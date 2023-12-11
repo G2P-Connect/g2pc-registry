@@ -2,20 +2,19 @@ package g2pc.ref.mno.regsvc.controller.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.MessageDTO;
 import g2pc.core.lib.dto.common.message.request.RequestDTO;
+import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
+import g2pc.core.lib.enums.ExceptionsENUM;
 import g2pc.core.lib.exceptionhandler.ErrorResponse;
 import g2pc.core.lib.exceptionhandler.ValidationErrorResponse;
 import g2pc.core.lib.exceptions.G2pHttpException;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import g2pc.core.lib.security.BearerTokenUtil;
-import g2pc.core.lib.security.service.G2pEncryptDecrypt;
 import g2pc.core.lib.security.service.G2pTokenService;
 import g2pc.dp.core.lib.service.RequestHandlerService;
 import g2pc.ref.mno.regsvc.constants.Constants;
@@ -31,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Map;
 
 /**
  * The type Registry controller.
@@ -49,8 +49,9 @@ public class RegistryController {
      */
     @Autowired
     MobileValidationService mobileValidationService;
+
     @Autowired
-    G2pEncryptDecrypt encryptDecrypt;
+    G2pTokenService g2pTokenService;
 
     @Value("${keycloak.realm}")
     private String keycloakRealm;
@@ -58,26 +59,48 @@ public class RegistryController {
     @Value("${keycloak.url}")
     private String keycloakURL;
 
-    @Autowired
-    G2pTokenService g2pTokenService;
-
     @Value("${keycloak.mobile.admin-url}")
     private String masterAdminUrl;
 
     @Value("${keycloak.mobile.get-client-url}")
     private String getClientUrl;
 
-    @Value("${crypto.support_encryption}")
-    private String isEncrypt;
+    @Value("${keycloak.admin.realm.client-id}")
+    private String adminRealmClientId;
 
-    @Value("${crypto.support_signature}")
-    private String isSign;
+    @Value("${keycloak.admin.realm.client-secret}")
+    private String adminRealmClientSecret;
 
     @Value("${keycloak.admin.client-id}")
     private String adminClientId;
 
     @Value("${keycloak.admin.client-secret}")
     private String adminClientSecret;
+
+    @Value("${keycloak.admin.username}")
+    private String adminUsername;
+
+    @Value("${keycloak.admin.password}")
+    private String adminPassword;
+
+    @Operation(summary = "Receive search request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = Constants.SEARCH_REQUEST_RECEIVED),
+            @ApiResponse(responseCode = "401", description = Constants.INVALID_AUTHORIZATION),
+            @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
+            @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
+    @PostMapping("/public/api/v1/registry/search")
+    public AcknowledgementDTO demoSearch(@RequestBody String requestString) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                ResponseHeaderDTO.class, HeaderDTO.class);
+        RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
+                readValue(requestString);
+        RequestMessageDTO messageDTO = objectMapper.convertValue(requestDTO.getMessage(), RequestMessageDTO.class);
+        String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
+        return requestHandlerService.buildCacheRequest(
+                objectMapper.writeValueAsString(requestDTO), cacheKey);
+    }
 
     /**
      * Get search request from DC
@@ -99,28 +122,23 @@ public class RegistryController {
         ObjectMapper objectMapper = new ObjectMapper();
         String token = BearerTokenUtil.getBearerTokenHeader();
         String introspect = keycloakURL+"/realms/"+keycloakRealm+"/protocol/openid-connect/token/introspect";
-        ResponseEntity<String> introspectResponse =  g2pTokenService.getInterSpectResponse(introspect,token,adminClientId,adminClientSecret);
+        ResponseEntity<String> introspectResponse =  g2pTokenService.getInterSpectResponse(introspect,token,adminRealmClientId,adminRealmClientSecret);
         if(introspectResponse.getStatusCode().value()==401){
             throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(),introspectResponse.getBody()));
         }
-        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token))){
-            throw new G2pHttpException(new G2pcError("err.request.unauthorized","User is not authorized"));
+        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token) , adminClientId , adminClientSecret , adminUsername , adminPassword)){
+            throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
         }
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
                 ResponseHeaderDTO.class, HeaderDTO.class);
 
         RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
                 readValue(requestString);
-        MessageDTO messageDTO = null;
-        if(isEncrypt.equals("true")){
-            String messageString = requestDTO.getMessage();
-            String deprecatedMessageString = encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-            messageDTO  = objectMapper.readerFor(MessageDTO.class).
-                    readValue(deprecatedMessageString);
-        }else{
-            messageDTO  = objectMapper.readerFor(MessageDTO.class).
-                    readValue(requestDTO.getMessage());
-        }
+        RequestMessageDTO messageDTO = null;
+
+        Map<String , Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
+         messageDTO = mobileValidationService.signatureValidation(metaData,requestDTO);
+        requestDTO.setMessage(messageDTO);
         String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
 
         try {

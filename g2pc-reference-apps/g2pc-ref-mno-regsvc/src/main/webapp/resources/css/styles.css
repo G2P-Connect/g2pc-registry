@@ -1,0 +1,25 @@
+body {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #fff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+}
+
+.panel {
+    width: 99%;
+    height: 97%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.contentPanel {
+    background-color: lightyellow;
+    border: 1px solid #fff;
+}
+
