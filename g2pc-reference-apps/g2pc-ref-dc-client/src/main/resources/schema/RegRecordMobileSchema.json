@@ -18,16 +18,17 @@
       "type": "string",
       "$ref": "#/definitions/nonEmptyString"
     },
-    "payment_status": {
+    "mobile_number": {
       "type": "string",
       "$ref": "#/definitions/nonEmptyString"
     },
-    "payment_date": {
+    "mobile_status": {
       "type": "string",
       "$ref": "#/definitions/nonEmptyString"
     },
-    "payment_amount": {
-      "type": "number"
+    "created_date": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
     }
   }  ,
   "definitions": {

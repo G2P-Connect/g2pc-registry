@@ -9,10 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dc1?currentSchema=g2pc
+    url: jdbc:postgresql://localhost:5432/dc1?currentSchema=g2pc
     username: postgres
-    password: t3{gxm6J9Gq-RFV&`hY>5N
-
+    password: postgres
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -65,26 +64,21 @@ spring.data.redis:
 
 keycloak:
   farmer:
-    url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
+    url: "http://127.0.0.1:8081/auth/realms/dp-farmer/protocol/openid-connect/token"
     clientId: "dp-farmer-client"
-    clientSecret: "55VuMuin1T8xbYSUu5zAJAebA05tSwkX"
+    clientSecret: "EaXspS2bAcCmh5XrDWYrAzWP1Q1uQEIA"
   mobile:
-    url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
+    url: "http://127.0.0.1:8081/auth/realms/dp-mobile/protocol/openid-connect/token"
     clientId: "dp-mobile-client"
-    clientSecret: "d9yPYp8G2nYLh1ztdeqvdvtxEYqx63Xg"
+    clientSecret: "d544H8DTnZXREmX6jgmAfoFCeFXQ1oVV"
   consumer:
-    admin-url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
+      admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+      get-client-url: http://127.0.0.1:8081/auth/admin/realms/data-consumer/clients
   realm: data-consumer
-  url: https://g2pc-dc-lab.cdpi.dev/auth/
+  url: http://127.0.0.1:8081/auth
   admin:
-    realm:
-      client-id: admin-cli
-      client-secret: vhqwFSij7JuzImzuCoWSQULx7FMnfijK
     client-id: admin-cli
-    client-secret: bCfUQy4z4NKiiz82zScJdKGtbKbchkhs  # In realm In master admin-cli -> secret key
-    username: admin
-    password: Abhilash@9922
+    client-secret: qCyT7XM24KGjb5j6ZU5YC68H5OiI6LRm
 
 crypto:
   farmer:
@@ -97,16 +91,14 @@ crypto:
     support_encryption: true
     support_signature: true
 
-
 registry:
   api_urls:
     farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
     mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
-    farmer_search_public _api: "http://localhost:9001/public/api/v1/registry/search"
+    farmer_search_public_api: "http://localhost:9001/public/api/v1/registry/search"
     mobile_search_public_api: "http://localhost:9002/public/api/v1/registry/search"
 
 dashboard:
   left_panel_url: "http://localhost:3005/d-solo/abce6fd2-95ac-49a6-b743-23d785b3a080/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
   right_panel_url: "http://localhost:3005/d-solo/eddad923-f089-4225-a72b-57967e263937/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
   bottom_panel_url: "http://localhost:3005/d-solo/e36b8bf2-4bf9-4391-b687-a026426db65f/botton-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-
