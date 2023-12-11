@@ -9,10 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp1?currentSchema=g2pc
+    url: jdbc:postgresql://localhost:5432/dp1?currentSchema=g2pc
     username: postgres
-    password: t3{gxm6J9Gq-RFV&`hY>5N
-
+    password: postgres
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -53,9 +52,9 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: 3.109.26.38
-  password: abhilash@99222
-  port: 6378
+  host: localhost
+  password: 123456789
+  port: 6379
 
 client:
   api_urls:
@@ -64,22 +63,17 @@ client:
 
 keycloak:
   data-consumer:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
+    url: "http://127.0.0.1:8081/auth/realms/data-consumer/protocol/openid-connect/token"
     client-id: dc-client
-    client-secret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+    client-secret: 82sb19hilQNGFBixW5AJInBHb0Xx2j6K
   farmer:
-    admin-url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
+    admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+    get-client-url: http://127.0.0.1:8081/auth/admin/realms/dp-farmer/clients
   realm: dp-farmer
-  url: https://g2pc-dp1-lab.cdpi.dev/auth
+  url: http://127.0.0.1:8081/auth
   admin:
-    realm:
-      client-id: admin-cli
-      client-secret: Sds0rtxBI4ChXKdVx2ytYsmvRmo9Jc2L  # In realm  admin-cli -> secret key
     client-id: admin-cli
-    client-secret: G7rVA27HI5UpzMJfomRvaQHubtbAcWcN  # In realm In master admin-cli -> secret key
-    username: admin
-    password: Abhilash@9923
+    client-secret: D50Wdnxc7JiQxCPi884aVDAiQy1nfPpq
 
 crypto:
   consumer:

@@ -11,6 +11,8 @@ import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
 import g2pc.core.lib.enums.HeaderStatusENUM;
+import g2pc.core.lib.exceptions.G2pHttpException;
+import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.utils.CommonUtils;
 import g2pc.dp.core.lib.entity.MsgTrackerEntity;
 import g2pc.dp.core.lib.repository.MsgTrackerRepository;
@@ -22,9 +24,12 @@ import g2pc.dp.core.lib.service.TxnTrackerRedisService;
 import g2pc.ref.farmer.regsvc.constants.Constants;
 import g2pc.ref.farmer.regsvc.service.FarmerResponseBuilderService;
 import jakarta.transaction.Transactional;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +42,9 @@ public class Scheduler {
 
     @Value("${client.api_urls.client_search_api}")
     String onSearchURL;
+
+    @Value("${client.api_urls.client_search_public_api}")
+    String onSearchPublicURL;
 
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -69,7 +77,12 @@ public class Scheduler {
     private TxnTrackerDbService txnTrackerDbService;
 
     /**
-     * Response scheduler
+     * This method is a scheduled task that runs every minute.
+     * It retrieves data from a Redis cache, processes it, and sends a response.
+     * If the status of the data is 'PDNG', it processes the data and updates the status to 'SUCC'.
+     * If an exception occurs during the process, it logs the exception message.
+     *
+     * @throws IOException if an I/O error occurs
      */
     @Scheduled(cron = "0 */1 * ? * *")// runs every 1 min.
     @Transactional
@@ -108,12 +121,27 @@ public class Scheduler {
                             headerDTO, responseMessageDTO);
                     responseString = CommonUtils.formatString(responseString);
                     log.info("on-search response = {}", responseString);
-                    //responseBuilderService.sendOnSearchResponse(responseString, onSearchURL,dcClientId,dcClientSecret ,keyClockClientTokenUrl);
+                    sendResponseDemo(responseString, onSearchPublicURL);
+                    //G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(responseString, onSearchURL,dcClientId,dcClientSecret ,keyClockClientTokenUrl);
+                    //if(!g2pcError.getCode().equals(HttpStatus.OK.toString())){
+                    //  throw new G2pHttpException(g2pcError);
+                    //} else {
                     txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+                    //}
                 }
             }
+            //} catch (G2pHttpException e) {
+            //  log.error("Exception thrown from on-search endpoint" + e.getG2PcError().getMessage());
         } catch (Exception ex) {
             log.error("Exception in responseScheduler: {}", ex.getMessage());
         }
+    }
+
+    private void sendResponseDemo(String responseString, String uri) {
+        HttpResponse<String> response = Unirest.post(uri)
+                .header("Content-Type", "application/json")
+                .body(responseString)
+                .asString();
+        log.info("response send response status = {}", response.getStatus());
     }
 }
