@@ -22,11 +22,11 @@ public interface RequestBuilderService {
 
     RequestMessageDTO buildMessage(List<SearchCriteriaDTO> searchCriteriaDTOList);
 
-    HeaderDTO buildHeader();
+    HeaderDTO buildHeader() throws JsonProcessingException;
 
     String buildRequest(List<SearchCriteriaDTO> searchCriteriaDTOList, String transactionId) throws JsonProcessingException;
 
-    Integer sendRequest(String requestString, String uri, String clientId, String clientSecret , String keyClockClientTokenUrl) throws Exception;
+    Integer sendRequest(String requestString, String uri, String clientId, String clientSecret , String keyClockClientTokenUrl ,   boolean isEncrypt, boolean isSign) throws Exception;
 
     CacheDTO createCache(String data, String status);
 
