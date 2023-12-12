@@ -7,37 +7,30 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.constants.G2pSecurityConstants;
-import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
-import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.MessageDTO;
 import g2pc.core.lib.dto.common.message.request.QueryDTO;
 import g2pc.core.lib.dto.common.message.request.RequestDTO;
+import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
+import g2pc.core.lib.dto.common.message.request.SearchRequestDTO;
+import g2pc.core.lib.enums.ExceptionsENUM;
+import g2pc.core.lib.exceptions.G2pHttpException;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
+import g2pc.core.lib.security.service.AsymmetricSignatureService;
 import g2pc.core.lib.security.service.G2pEncryptDecrypt;
 import g2pc.dp.core.lib.service.RequestHandlerService;
+import g2pc.ref.mno.regsvc.constants.Constants;
 import g2pc.ref.mno.regsvc.dto.request.QueryMobileDTO;
 import g2pc.ref.mno.regsvc.dto.request.QueryParamsMobileDTO;
 import g2pc.ref.mno.regsvc.service.MobileValidationService;
-import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
-import kong.unirest.UnirestException;
-import kong.unirest.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
-
+import java.util.*;
 /**
  * The type Mobile validation service.
  */
@@ -54,11 +47,14 @@ public class MobileValidationServiceImpl implements MobileValidationService {
     @Autowired
     G2pEncryptDecrypt encryptDecrypt;
 
-    @Value("${crypto.support_encryption}")
-    private String isEncrypt;
+    @Value("${crypto.mobile.support_encryption}")
+    private boolean isEncrypt;
 
-    @Value("${crypto.support_signature}")
-    private String isSign;
+    @Value("${crypto.mobile.support_signature}")
+    private boolean isSign;
+
+    @Autowired
+    private AsymmetricSignatureService asymmetricSignatureService;
 
     /**
      * Method to validate Request dto
@@ -70,23 +66,15 @@ public class MobileValidationServiceImpl implements MobileValidationService {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(QueryDTO.class,
                 QueryMobileDTO.class, QueryParamsMobileDTO.class);
-
-        MessageDTO messageDTO = null;
-        if(isEncrypt.equals("true")){
-            String messageString = requestDTO.getMessage();
-            String deprecatedMessageString = encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-            messageDTO  = objectMapper.readerFor(MessageDTO.class).
-                    readValue(deprecatedMessageString);
-        }else{
-            messageDTO  = objectMapper.readerFor(MessageDTO.class).
-                    readValue(requestDTO.getMessage());
+        byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
+        RequestMessageDTO messageDTO =  objectMapper.readValue(json, RequestMessageDTO.class);
+        List<SearchRequestDTO> searchRequestList = messageDTO.getSearchRequest();
+        for(SearchRequestDTO searchRequestDTO : searchRequestList){
+            String queryString = objectMapper.writeValueAsString(searchRequestDTO.getSearchCriteria().getQuery());
+            QueryDTO queryMobileDto = objectMapper.readerFor(QueryDTO.class).
+                    readValue(queryString);
+            validateQueryDto(queryMobileDto);
         }
-
-        String queryString = objectMapper.writeValueAsString(messageDTO.getSearchRequest().getSearchCriteria().getQuery());
-
-        QueryDTO queryMobileDTO = objectMapper.readerFor(QueryDTO.class).
-                readValue(queryString);
-       validateQueryDto(queryMobileDTO);
 
         String headerString = new ObjectMapper()
                 .writerWithDefaultPrettyPrinter()
@@ -124,11 +112,98 @@ public class MobileValidationServiceImpl implements MobileValidationService {
         for (ValidationMessage error : errorMessage){
             log.info("Validation errors" + error );
             errorcombinedMessage.add(new G2pcError("",error.getMessage()));
-
         }
         if (errorMessage.size()>0){
             throw new G2pcValidationException(errorcombinedMessage);
         }
+    }
+
+    /**
+     * Method to validate signature and encryption of request dto
+     * @param metaData
+     * @param requestDTO
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO) throws Exception {
+        log.info("Is encrypted ? -> " + isEncrypt);
+        log.info("Is signed ? -> " + isSign);
+        ObjectMapper objectMapper = new ObjectMapper();
+        RequestMessageDTO messageDTO;
+        if(isSign){
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(true)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            if(isEncrypt){
+                if(!requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+
+                String requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
+                String requestSignature = requestDTO.getSignature();
+                String messageString = requestDTO.getMessage().toString();
+                String data = requestHeaderString+messageString;
+                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature)) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    String deprecatedMessageString;
+                    try{
+                        deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                    } catch (RuntimeException e ){
+                        throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
+                    }
+                    log.info("Decrypted Message string ->"+deprecatedMessageString);
+                    messageDTO  = objectMapper.readerFor(RequestMessageDTO.class).
+                            readValue(deprecatedMessageString);
+                } else {
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+            }else{
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, RequestMessageDTO.class);
+                String requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
+                String requestSignature = requestDTO.getSignature();
+                String messageString = objectMapper.writeValueAsString(messageDTO);
+                String data = requestHeaderString+messageString;
+                log.info("Signature ->"+requestSignature);
+                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature)) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }
+
+            }
+        } else {
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(false)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            if(isEncrypt){
+                if(!requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                String messageString = requestDTO.getMessage().toString();
+                String deprecatedMessageString;
+                try{
+                    deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                } catch (RuntimeException e ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
+                }
+                log.info("Decrypted Message string ->"+deprecatedMessageString);
+                messageDTO  = objectMapper.readerFor(RequestMessageDTO.class).
+                        readValue(deprecatedMessageString);
+
+            }else{
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, RequestMessageDTO.class);
+            }
+        }
+        return messageDTO;
     }
 
 

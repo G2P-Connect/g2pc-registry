@@ -38,10 +38,8 @@ spring.data.redis:
   repositories.enabled: false
   host: localhost
   password: 123456789
-  port: 6379
+  port: 6376
 
-client:
-  api_urls:
-    mobile_info_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
+
 
 

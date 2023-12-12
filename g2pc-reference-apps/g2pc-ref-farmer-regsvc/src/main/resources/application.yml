@@ -1,12 +1,18 @@
 spring:
   mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+
     pathmatch:
       matching-strategy: ANT_PATH_MATCHER
+
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/g2p?currentSchema=dp
+    url: not_set
     username: postgres
-    password: postgres
+    password: not_set
+
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -35,6 +41,11 @@ spring:
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
 
+  devtools:
+    restart:
+      additional-paths: src/main/webapp
+      exclude: static/**,public/**
+
 server:
   port: 9001
   error:
@@ -42,28 +53,38 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: localhost
-  password: 123456789
-  port: 6379
+  host: not_set
+  password: not_set
+  port: 6378
 
 client:
   api_urls:
     client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
+    client_search_public_api: "http://localhost:8000/public/api/v1/registry/on-search"
 
 keycloak:
   data-consumer:
-    url: "http://127.0.0.1:8081/auth/realms/data-consumer/protocol/openid-connect/token"
+    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
     client-id: dc-client
-    client-secret: 82sb19hilQNGFBixW5AJInBHb0Xx2j6K
+    client-secret: not_set
   farmer:
-    admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
-    get-client-url: http://127.0.0.1:8081/auth/admin/realms/dp-farmer/clients
+    admin-url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
+    get-client-url: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
   realm: dp-farmer
-  url: http://127.0.0.1:8081/auth
+  url: https://g2pc-dp1-lab.cdpi.dev/auth
   admin:
+    realm:
+      client-id: admin-cli
+      client-secret: not_set  # In realm  admin-cli -> secret key
     client-id: admin-cli
-    client-secret: D50Wdnxc7JiQxCPi884aVDAiQy1nfPpq
+    client-secret: not_set  # In realm In master admin-cli -> secret key
+    username: admin
+    password: not_set
 
 crypto:
-  support_encryption: false
-  support_signature: false
+  consumer:
+    support_encryption: true
+    support_signature: true
+  farmer:
+    support_encryption: true
+    support_signature: true

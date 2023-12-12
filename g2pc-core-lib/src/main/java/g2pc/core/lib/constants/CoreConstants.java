@@ -30,4 +30,9 @@ public class CoreConstants {
     public static final String CLIENT_SECRET = "client_secret";
 
     public static final String KEYCLOAK_URL = "keycloak_url";
+
+    public static final String HASHING_ALGORITHM =  "hashing_algorithm";
+
+    public static final String IS_SIGN = "is_sign";
+
 }

@@ -20,6 +20,12 @@ public class RegistryConfig {
     @Value("${registry.api_urls.mobile_search_api}")
     private String mobileSearchURL;
 
+    @Value("${registry.api_urls.farmer_search_public_api}")
+    private String farmerSearchPublicURL;
+
+    @Value("${registry.api_urls.mobile_search_public_api}")
+    private String mobileSearchPublicURL;
+
     @Value("${keycloak.farmer.clientId}")
     private String farmerClientId;
 
@@ -87,7 +93,7 @@ public class RegistryConfig {
     private Map<String, String> getFarmerRegistryMap() {
         Map<String, String> farmerRegistryMap = new HashMap<>();
         farmerRegistryMap.put(CoreConstants.QUERY_NAME, "paid_farmer");
-        farmerRegistryMap.put(CoreConstants.DP_SEARCH_URL, farmerSearchURL);
+        farmerRegistryMap.put(CoreConstants.DP_SEARCH_URL, farmerSearchPublicURL);
         farmerRegistryMap.put(CoreConstants.REG_TYPE, "ns:FARMER_REGISTRY");
         farmerRegistryMap.put(CoreConstants.REG_SUB_TYPE, "");
         farmerRegistryMap.put(CoreConstants.QUERY_TYPE, "namedQuery");
@@ -110,7 +116,7 @@ public class RegistryConfig {
     private Map<String, String> getMobileRegistryMap() {
         Map<String, String> mobileRegistryMap = new HashMap<>();
         mobileRegistryMap.put(CoreConstants.QUERY_NAME, "mobile_registered");
-        mobileRegistryMap.put(CoreConstants.DP_SEARCH_URL, mobileSearchURL);
+        mobileRegistryMap.put(CoreConstants.DP_SEARCH_URL, mobileSearchPublicURL);
         mobileRegistryMap.put(CoreConstants.REG_TYPE, "ns:MOBILE_REGISTRY");
         mobileRegistryMap.put(CoreConstants.REG_SUB_TYPE, "");
         mobileRegistryMap.put(CoreConstants.QUERY_TYPE, "namedQuery");

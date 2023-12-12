@@ -1,13 +1,11 @@
 package g2pc.dp.core.lib.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.SearchRequestDTO;
-import g2pc.core.lib.dto.common.message.response.DataDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
 import g2pc.core.lib.dto.common.security.TokenExpiryDto;
+import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.dp.core.lib.entity.MsgTrackerEntity;
 import g2pc.dp.core.lib.entity.TxnTrackerEntity;
 import kong.unirest.UnirestException;
@@ -24,7 +22,7 @@ public interface ResponseBuilderService {
 
     String buildResponseString(String signatureString, ResponseHeaderDTO responseHeaderDTO, ResponseMessageDTO messageDTO) throws JsonProcessingException;
 
-    Integer sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception;
+    G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception;
 
     public void saveToken(String cacheKey, TokenExpiryDto tokenExpiryDto) throws JsonProcessingException;
 

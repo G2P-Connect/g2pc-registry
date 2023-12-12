@@ -22,9 +22,12 @@ public interface G2pTokenService {
 
     public Boolean isTokenExpired(TokenExpiryDto tokenExpiryDto) throws ParseException;
 
-    public ArrayList<Map<String, String>> getClientByRealm(String masterAdminUrl , String getClientUrl) throws JsonProcessingException;
+    public ArrayList<Map<String, String>> getClientByRealm(String masterAdminUrl, String getClientUrl , String clientId , String clientSecret
+            , String username , String password) throws JsonProcessingException;
 
-    public boolean validateToken(String masterAdminUrl , String getClientUrl , String clientId) throws JsonProcessingException;
+    public boolean validateToken(String masterAdminUrl, String getClientUrl , String clientId ,
+                                 String adminClientId , String adminClientSecret
+            , String username , String password) throws JsonProcessingException;
 
     public String decodeToken(String token) throws JsonProcessingException;
 

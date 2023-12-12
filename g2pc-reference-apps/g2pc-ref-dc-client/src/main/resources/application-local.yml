@@ -1,0 +1,104 @@
+spring:
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/dc1?currentSchema=g2pc
+    username: postgres
+    password: postgres
+    hikari:
+      data-source-properties:
+        stringtype: unspecified
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        useLocalSessionState: true
+        rewriteBatchedStatements: true
+        cacheResultSetMetadata: true
+        cacheServerConfiguration: true
+        maintainTimeStats: false
+        maximum-pool-size: 5
+        connection-timeout: 5000
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate.ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    generate-ddl: false
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration
+
+  devtools:
+    restart:
+      additional-paths: src/main/webapp
+      exclude: static/**,public/**
+
+server:
+  port: 8000
+  error:
+    include-message: always
+
+spring.data.redis:
+  repositories.enabled: false
+  host: localhost
+  password: 123456789
+  port: 6379
+
+  api_urls:
+    #farmer_search_api: "https://webhook.site/9043a6a4-1710-4af6-a7c6-25a55c6fc903"
+    #mobile_search_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
+    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
+    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
+
+keycloak:
+  farmer:
+    url: "http://127.0.0.1:8081/auth/realms/dp-farmer/protocol/openid-connect/token"
+    clientId: "dp-farmer-client"
+    clientSecret: "EaXspS2bAcCmh5XrDWYrAzWP1Q1uQEIA"
+  mobile:
+    url: "http://127.0.0.1:8081/auth/realms/dp-mobile/protocol/openid-connect/token"
+    clientId: "dp-mobile-client"
+    clientSecret: "d544H8DTnZXREmX6jgmAfoFCeFXQ1oVV"
+  consumer:
+      admin-url: http://127.0.0.1:8081/auth/realms/master/protocol/openid-connect/token
+      get-client-url: http://127.0.0.1:8081/auth/admin/realms/data-consumer/clients
+  realm: data-consumer
+  url: http://127.0.0.1:8081/auth
+  admin:
+    client-id: admin-cli
+    client-secret: qCyT7XM24KGjb5j6ZU5YC68H5OiI6LRm
+
+crypto:
+  farmer:
+    support_encryption: true
+    support_signature: true
+  mobile:
+    support_encryption: true
+    support_signature: true
+  consumer:
+    support_encryption: true
+    support_signature: true
+
+registry:
+  api_urls:
+    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
+    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
+    farmer_search_public_api: "http://localhost:9001/public/api/v1/registry/search"
+    mobile_search_public_api: "http://localhost:9002/public/api/v1/registry/search"
+
+dashboard:
+  left_panel_url: "http://localhost:3005/d-solo/abce6fd2-95ac-49a6-b743-23d785b3a080/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  right_panel_url: "http://localhost:3005/d-solo/eddad923-f089-4225-a72b-57967e263937/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  bottom_panel_url: "http://localhost:3005/d-solo/e36b8bf2-4bf9-4391-b687-a026426db65f/botton-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"

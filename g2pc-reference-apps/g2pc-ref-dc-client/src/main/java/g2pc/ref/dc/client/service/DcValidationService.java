@@ -1,10 +1,12 @@
 package g2pc.ref.dc.client.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import g2pc.core.lib.dto.common.message.response.ResponseDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * The interface Dc validation service.
@@ -12,22 +14,9 @@ import org.springframework.stereotype.Service;
 @Service
 public interface DcValidationService {
 
-
-    /**
-     * Validate response dto.
-     *
-     * @param responseDTO the response dto
-     * @throws G2pcValidationException the g 2 pc validation exception
-     * @throws JsonProcessingException the json processing exception
-     */
     public void validateResponseDto(ResponseDTO responseDTO) throws Exception;
 
-    /**
-     * Validate reg records.
-     *
-     * @param messageDTO the message dto
-     * @throws G2pcValidationException the g 2 pc validation exception
-     * @throws JsonProcessingException the json processing exception
-     */
-    public void validateRegRecords(ResponseMessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException;
+    public void validateRegRecords(ResponseMessageDTO messageDTO) throws G2pcValidationException, IOException;
+
+    ResponseMessageDTO signatureValidation(Map<String, Object> metaData, ResponseDTO responseDTO) throws Exception;
 }

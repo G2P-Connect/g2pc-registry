@@ -16,4 +16,8 @@ public class Constants {
     public static final String CACHE_KEY_SEARCH_STRING = "request-mno*";
 
     public static final String CACHE_KEY_STRING = "request-mno-";
+
+    public static final String CONFIGURATION_MISMATCH_ERROR = "Configurations are not matching ";
+
+
 }

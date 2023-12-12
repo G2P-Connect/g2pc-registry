@@ -7,7 +7,5 @@ import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
 
 public interface DcResponseHandlerService {
 
-    void updateTransactionDbAndCache(String transactionId, SearchResponseDTO searchResponseDTO) throws JsonProcessingException;
-
     AcknowledgementDTO getResponse(ResponseDTO responseDTO) throws JsonProcessingException;
 }

@@ -3,16 +3,20 @@ package g2pc.dp.core.lib.serviceimpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.config.G2pUnirestHelper;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
+import g2pc.core.lib.dto.common.header.MetaDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
+import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
 import g2pc.core.lib.dto.common.message.response.*;
 import g2pc.core.lib.dto.common.security.G2pTokenResponse;
 import g2pc.core.lib.dto.common.security.TokenExpiryDto;
 import g2pc.core.lib.exceptionhandler.ErrorResponse;
 import g2pc.core.lib.exceptions.G2pHttpException;
 import g2pc.core.lib.exceptions.G2pcError;
+import g2pc.core.lib.security.service.AsymmetricSignatureService;
 import g2pc.core.lib.security.service.G2pEncryptDecrypt;
 import g2pc.core.lib.security.service.G2pTokenService;
 import g2pc.core.lib.utils.CommonUtils;
@@ -53,14 +57,14 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
     @Autowired
     G2pTokenService g2pTokenService;
 
-    @Value("${crypto.support_encryption}")
-    private String isEncrypt;
+    @Value("${crypto.consumer.support_encryption}")
+    private boolean isEncrypt;
 
-    @Value("${crypto.support_signature}")
-    private String isSign;
+    @Value("${crypto.consumer.support_signature}")
+    private boolean isSign;
 
     @Autowired
-    private MsgTrackerRepository msgTrackerRepository;
+    AsymmetricSignatureService asymmetricSignatureService;
 
     /**
      * Get response header
@@ -83,6 +87,10 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
         headerDTO.setStatusReasonMessage(msgTrackerEntity.getStatusReasonMessage());
         headerDTO.setTotalCount(msgTrackerEntity.getTotalCount());
         headerDTO.setCompletedCount(msgTrackerEntity.getCompletedCount());
+        Map<String , Object > metaMap =  new HashMap<>();
+        MetaDTO metaDTO = new MetaDTO();
+        metaDTO.setData(metaMap);
+        headerDTO.setMeta(metaDTO);
         return headerDTO;
     }
 
@@ -122,10 +130,12 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
     }
 
     @Override
-    public Integer sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception {
+    public G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception {
         log.info("Send on-search response");
         ObjectMapper objectMapper = new ObjectMapper();
-        responseString = createSignature(isSign, isEncrypt, responseString);
+        log.info("Is encrypted ? -> "+isEncrypt);
+        log.info("Is signed ? -> "+isSign);
+        responseString = createSignature( isEncrypt, isSign , responseString);
         String jwtToken = getValidatedToken(keyClockClientTokenUrl, clientId, clientSecret);
         HttpResponse<String> response = g2pUnirestHelper.g2pPost(uri)
                 .header("Content-Type", "application/json")
@@ -134,20 +144,20 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
                 .asString();
         log.info("on-search response status = {}", response.getStatus());
         if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-            G2pcError g2pcError = new G2pcError("err.service.unavailable", response.getBody());
-            throw new G2pHttpException(g2pcError);
+            G2pcError g2pcError = new G2pcError(HttpStatus.INTERNAL_SERVER_ERROR.toString(), response.getBody());
+            return g2pcError;
         } else if (response.getStatus() == HttpStatus.UNAUTHORIZED.value()) {
-            ErrorResponse errorResponse = objectMapper.readerFor(ErrorResponse.class).
-                    readValue(response.getBody());
-            throw new G2pHttpException(errorResponse.getG2PcError());
+            G2pcError g2pcError = new G2pcError( HttpStatus.UNAUTHORIZED.toString(), response.getBody());
+            return g2pcError;
         } else if (response.getStatus() == HttpStatus.BAD_REQUEST.value()) {
-            G2pcError g2pcError = new G2pcError("err.request.bad", response.getBody());
-            throw new G2pHttpException(g2pcError);
+            G2pcError g2pcError = new G2pcError(HttpStatus.BAD_REQUEST.toString(), response.getBody());
+            return g2pcError;
         } else if (response.getStatus() != HttpStatus.OK.value()) {
             G2pcError g2pcError = new G2pcError("err.service.unavailable", response.getBody());
-            throw new G2pHttpException(g2pcError);
+            return g2pcError;
         }
-        return response.getStatus();
+        G2pcError g2pcError = new G2pcError(HttpStatus.OK.toString(), response.getBody());
+        return g2pcError;
     }
 
     /**
@@ -220,34 +230,59 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
      * @return
      * @throws Exception
      */
-    private String createSignature(String isSign, String isEncrypt, String responseString) throws Exception {
+    private String createSignature( boolean isEncrypt, boolean isSign, String responseString) throws Exception {
+
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
                 ResponseHeaderDTO.class, HeaderDTO.class);
         ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
                 readValue(responseString);
 
-        String messageString = responseDTO.getMessage().toString();
+        byte[] json = objectMapper.writeValueAsBytes( responseDTO.getMessage());
+        ResponseMessageDTO messageDTO =  objectMapper.readValue(json, ResponseMessageDTO.class);
         ResponseHeaderDTO responseHeaderDTO = (ResponseHeaderDTO) responseDTO.getHeader();
-        String requestHeaderString = objectMapper.writeValueAsString(responseHeaderDTO);
+        String responseHeaderString = objectMapper.writeValueAsString(responseHeaderDTO);
+        String messageString = objectMapper.writeValueAsString(messageDTO);
         String signature = null;
 
-        if (isSign.equals("false") && isEncrypt.equals("false")) {
-            responseDTO.getHeader().setIsMsgEncrypted(false);
-        } else if (isSign.equals("false") && isEncrypt.equals("true")) {
-            String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString, G2pSecurityConstants.SECRET_KEY);
-            responseDTO.setMessage(encryptedMessageString);// how to store encrypted string message dto
-            responseDTO.getHeader().setIsMsgEncrypted(true);
-
-        } else if (isSign.equals("true") && isEncrypt.equals("false")) {
-            responseDTO.getHeader().setIsMsgEncrypted(false);
-            signature = encryptDecrypt.sha256Hashing(messageString + requestHeaderString);
-
+        if(isSign){
+            if(isEncrypt){
+                String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                responseDTO.setMessage(encryptedMessageString);
+                responseDTO.getHeader().setIsMsgEncrypted(true);
+                Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+                meta.put(CoreConstants.IS_SIGN,true);
+                responseDTO.getHeader().getMeta().setData(meta);
+                responseHeaderString = objectMapper.writeValueAsString(responseDTO.getHeader());
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+encryptedMessageString);
+                signature = Base64.getEncoder().encodeToString(asymmetricSignature);
+                log.info("Encrypted message ->"+encryptedMessageString);
+                log.info("Hashed Signature ->"+signature);
+            }else{
+                responseDTO.getHeader().setIsMsgEncrypted(false);
+                Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+                meta.put(CoreConstants.IS_SIGN,true);
+                responseDTO.getHeader().getMeta().setData(meta);
+                responseHeaderString = objectMapper.writeValueAsString(responseDTO.getHeader());
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+messageString);
+                signature = Base64.getEncoder().encodeToString(asymmetricSignature);
+                log.info("Hashed Signature ->"+signature);
+            }
         } else {
-            String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString, G2pSecurityConstants.SECRET_KEY);
-            responseDTO.setMessage(encryptedMessageString);
-            responseDTO.getHeader().setIsMsgEncrypted(true);
-            signature = encryptDecrypt.sha256Hashing(encryptedMessageString + requestHeaderString);
+            if(isEncrypt){
+                String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                responseDTO.setMessage(encryptedMessageString);
+                responseDTO.getHeader().setIsMsgEncrypted(true);
+                Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+                meta.put(CoreConstants.IS_SIGN,false);
+                responseDTO.getHeader().getMeta().setData(meta);
+                log.info("Encrypted message ->"+encryptedMessageString);
+            }else{
+                responseDTO.getHeader().setIsMsgEncrypted(false);
+                Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+                meta.put(CoreConstants.IS_SIGN,false);
+                responseDTO.getHeader().getMeta().setData(meta);
+            }
         }
         responseDTO.setSignature(signature);
         responseString = objectMapper.writeValueAsString(responseDTO);

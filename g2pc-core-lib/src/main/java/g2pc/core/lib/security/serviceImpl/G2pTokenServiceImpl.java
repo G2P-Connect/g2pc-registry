@@ -26,7 +26,7 @@ import java.util.*;
 
 
 /**
- * Service contains methods related to token
+ * Service contains methods related to security using token
  */
 @Service
 @Slf4j
@@ -117,14 +117,17 @@ public class G2pTokenServiceImpl implements G2pTokenService {
      * @throws JsonProcessingException
      */
     @Override
-    public ArrayList<Map<String, String>> getClientByRealm(String masterAdminUrl, String getClientUrl) throws JsonProcessingException {
-        String grantType = "client_credentials";
+    public ArrayList<Map<String, String>> getClientByRealm(String masterAdminUrl, String getClientUrl , String adminClientId , String adminClientSecret
+            , String username , String password) throws JsonProcessingException {
+        String grantType = "password";
         ObjectMapper objectMapper = new ObjectMapper();
         HttpResponse<JsonNode> response = Unirest.post(masterAdminUrl)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .field("grant_type", grantType)
-                .field("client_id", "admin-cli")
-                .field("client_secret", "PKCxos6O3Sg7odXuGVeguP946EEUozY0")
+                .field("client_id", adminClientId)
+                .field("client_secret", adminClientSecret)
+                .field("username",username)
+                .field("password",password)
                 .asJson();
         Map<String, Object> responseBody = objectMapper.readValue(response.getBody().toString(), new TypeReference<Map<String, Object>>() {});
         String token = responseBody.get("access_token").toString();
@@ -146,8 +149,10 @@ public class G2pTokenServiceImpl implements G2pTokenService {
      * @throws JsonProcessingException
      */
     @Override
-    public boolean validateToken(String masterAdminUrl, String getClientUrl , String clientId) throws JsonProcessingException {
-        ArrayList<Map<String, String>> responseMap = getClientByRealm(masterAdminUrl, getClientUrl);
+    public boolean validateToken(String masterAdminUrl, String getClientUrl , String clientId ,
+      String adminClientId , String adminClientSecret
+            , String username , String password) throws JsonProcessingException {
+        ArrayList<Map<String, String>> responseMap = getClientByRealm(masterAdminUrl, getClientUrl , adminClientId , adminClientSecret , username , password);
         boolean isValid = false;
         for (int i = 0; i < responseMap.size(); i++) {
             String responseClientId = responseMap.get(i).get("clientId");

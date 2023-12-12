@@ -1,7 +1,12 @@
 package g2pc.ref.dc.client.serviceimpl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
+import g2pc.core.lib.dto.common.header.HeaderDTO;
+import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
+import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import g2pc.core.lib.dto.common.message.request.*;
 import g2pc.core.lib.enums.HeaderStatusENUM;
 import g2pc.core.lib.utils.CommonUtils;
@@ -19,6 +24,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,6 +41,12 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     @Autowired
     private RegistryTransactionsRepository registryTransactionsRepository;
 
+    @Value("${registry.api_urls.farmer_search_api}")
+    private String farmerSearchURL;
+
+    @Value("${registry.api_urls.mobile_search_api}")
+    private String mobileSearchURL;
+
     @Autowired
     private RequestBuilderService requestBuilderService;
 
@@ -43,6 +55,37 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
 
     @Autowired
     TxnTrackerService txnTrackerService;
+
+    @Value("${keycloak.farmer.clientId}")
+    private String farmerClientId;
+
+    @Value("${keycloak.farmer.clientSecret}")
+    private String farmerClientSecret;
+
+    @Value("${keycloak.mobile.clientId}")
+    private String mobileClientId;
+
+    @Value("${keycloak.mobile.clientSecret}")
+    private String mobileClientSecret;
+
+    @Value("${keycloak.farmer.url}")
+    private String keycloakFarmerTokenUrl;
+
+    @Value("${keycloak.mobile.url}")
+    private String keycloakMobileTokenUrl;
+
+    @Value("${crypto.farmer.support_encryption}")
+    private boolean isFarmerEncrypt;
+
+    @Value("${crypto.farmer.support_signature}")
+    private boolean isFarmerSign;
+
+    @Value("${crypto.mobile.support_encryption}")
+    private boolean isMobileEncrypt;
+
+    @Value("${crypto.mobile.support_signature}")
+    private boolean isMobileSign;
+
 
     /**
      * Create initial transaction in DB
@@ -65,18 +108,11 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
      * @param payloadMapList required query params data
      * @return acknowledgement of the request
      */
-    @SuppressWarnings("unchecked")
     @Override
     public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         acknowledgementDTO.setMessage(Constants.SEARCH_REQUEST_RECEIVED);
         acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
-
-        String transactionId = CommonUtils.generateUniqueId("T");
-
-        txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
-
-        createInitialTransactionInDB(transactionId);
 
         List<Map<String, Object>> queryMapList = requestBuilderService.createQueryMap(payloadMapList, registryConfig.getQueryParamsConfig().entrySet());
         for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
@@ -91,16 +127,29 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
                 SearchCriteriaDTO searchCriteriaDTO = requestBuilderService.getSearchCriteriaDTO(queryParamsMap, registrySpecificConfigMap);
                 searchCriteriaDTOList.add(searchCriteriaDTO);
             }
+
+            String transactionId = CommonUtils.generateUniqueId("T");
+            //txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
+
             String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId);
             txnTrackerService.saveRequestTransaction(requestString,
                     registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
+            txnTrackerService.saveRequestInDB(requestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
             log.info("requestString = {}", requestString);
-            //sendRequestDemo(requestString, registrySpecificConfigMap.get("url").toString());
+            sendRequestDemo(requestString, registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
            /* requestBuilderService.sendRequest(requestString,
                     registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
                     registrySpecificConfigMap.get(CoreConstants.CLIENT_ID).toString(),
                     registrySpecificConfigMap.get(CoreConstants.CLIENT_SECRET).toString(),
                     registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString());*/
+
+            log.info("Initial Request String for " + configEntryMap.getKey() + ": {}", requestString);
+
+            /*if (configEntryMap.getKey().equals("mobile_registry")) {
+                requestBuilderService.sendRequest(requestString, mobileSearchURL, mobileClientId, mobileClientSecret, keycloakMobileTokenUrl, isMobileEncrypt, isMobileSign);
+            } else {
+                requestBuilderService.sendRequest(requestString, farmerSearchURL, farmerClientId, farmerClientSecret, keycloakFarmerTokenUrl, isFarmerEncrypt, isFarmerSign);
+            }*/
         }
         return acknowledgementDTO;
     }
@@ -144,10 +193,15 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     }
 
     private void sendRequestDemo(String requestString, String uri) {
-        HttpResponse<String> response = Unirest.post(uri)
-                .body(requestString)
-                .asString();
-        log.info("request send response status = {}", response.getStatus());
+        try {
+            HttpResponse<String> response = Unirest.post(uri)
+                    .header("Content-Type", "application/json")
+                    .body(requestString)
+                    .asString();
+            log.info("request send response status = {}", response.getStatus());
+        } catch (Exception ex) {
+            log.error("request send error ");
+        }
     }
 }
 

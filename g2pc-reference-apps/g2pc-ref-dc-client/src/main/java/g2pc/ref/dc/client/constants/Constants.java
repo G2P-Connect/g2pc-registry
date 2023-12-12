@@ -23,4 +23,7 @@ public class Constants {
     public static final String FARMER_REGISTRY = "farmer_registry";
 
     public static final String MOBILE_REGISTRY = "mobile_registry";
+
+    public static final String CONFIGURATION_MISMATCH_ERROR = "Configurations are not matching ";
+
 }

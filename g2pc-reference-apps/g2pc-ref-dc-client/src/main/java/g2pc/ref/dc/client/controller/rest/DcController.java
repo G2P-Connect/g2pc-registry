@@ -2,13 +2,13 @@ package g2pc.ref.dc.client.controller.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
+import g2pc.core.lib.enums.ExceptionsENUM;
 import g2pc.core.lib.exceptionhandler.ErrorResponse;
 import g2pc.core.lib.exceptionhandler.ValidationErrorResponse;
 import g2pc.core.lib.exceptions.G2pHttpException;
@@ -26,9 +26,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,17 +70,23 @@ public class DcController {
     @Value("${keycloak.consumer.get-client-url}")
     private String getClientUrl;
 
-    @Value("${crypto.support_encryption}")
-    private String isEncrypt;
+    @Value("${keycloak.admin.realm.client-id}")
+    private String adminRealmClientId;
 
-    @Value("${crypto.support_signature}")
-    private String isSign;
+    @Value("${keycloak.admin.realm.client-secret}")
+    private String adminRealmClientSecret;
 
     @Value("${keycloak.admin.client-id}")
     private String adminClientId;
 
     @Value("${keycloak.admin.client-secret}")
     private String adminClientSecret;
+
+    @Value("${keycloak.admin.username}")
+    private String adminUsername;
+
+    @Value("${keycloak.admin.password}")
+    private String adminPassword;
 
     /**
      * Get consumer search request
@@ -121,8 +124,8 @@ public class DcController {
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/public/api/v1/consumer/search/csv")
     public AcknowledgementDTO createSearchRequestsFromCsv(@RequestPart(value = "file") MultipartFile payloadFile) throws Exception {
-        log.info("Payload received from csv file");
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        log.info("Payload received from csv file");
         if (ObjectUtils.isNotEmpty(payloadFile)) {
             acknowledgementDTO = dcRequestBuilderService.generatePayloadFromCsv(payloadFile);
         }
@@ -155,12 +158,12 @@ public class DcController {
     public AcknowledgementDTO createSearchRequests(@RequestBody String responseString) throws Exception {
         String token = BearerTokenUtil.getBearerTokenHeader();
         String introspect = keycloakURL + "/realms/" + keycloakRealm + "/protocol/openid-connect/token/introspect";
-        ResponseEntity<String> introspectResponse = g2pTokenService.getInterSpectResponse(introspect, token, adminClientId, adminClientSecret);
+        ResponseEntity<String> introspectResponse = g2pTokenService.getInterSpectResponse(introspect, token, adminRealmClientId, adminRealmClientSecret);
         if (introspectResponse.getStatusCode().value() == 401) {
             throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(), introspectResponse.getBody()));
         }
-        if (!g2pTokenService.validateToken(masterAdminUrl, getClientUrl, g2pTokenService.decodeToken(token))) {
-            throw new G2pHttpException(new G2pcError("err.request.unauthorized", "User is not authorized"));
+        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token) , adminClientId , adminClientSecret , adminUsername , adminPassword)){
+            throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
         }
 
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
@@ -170,14 +173,9 @@ public class DcController {
         ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
                 readValue(responseString);
         ResponseMessageDTO messageDTO = null;
-        if (isEncrypt.equals("true")) {
-            String messageString = objectMapper.convertValue(responseDTO.getMessage(), String.class);
-            String deprecatedMessageString = encryptDecrypt.g2pDecrypt(messageString, G2pSecurityConstants.SECRET_KEY);
-            messageDTO = objectMapper.readerFor(ResponseMessageDTO.class).
-                    readValue(deprecatedMessageString);
-        } else {
-            messageDTO = objectMapper.convertValue(responseDTO.getMessage(), ResponseMessageDTO.class);
-        }
+        Map <String , Object> metaData = (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+        messageDTO= dcValidationService.signatureValidation(metaData, responseDTO);
+        responseDTO.setMessage(messageDTO);
         try {
             dcValidationService.validateResponseDto(responseDTO);
             if (ObjectUtils.isNotEmpty(responseDTO)) {
