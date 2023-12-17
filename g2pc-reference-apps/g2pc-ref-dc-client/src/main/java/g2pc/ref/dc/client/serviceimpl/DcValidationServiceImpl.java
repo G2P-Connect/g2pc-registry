@@ -23,14 +23,16 @@ import g2pc.core.lib.security.service.G2pEncryptDecrypt;
 import g2pc.dc.core.lib.service.ResponseHandlerService;
 import g2pc.ref.dc.client.constants.Constants;
 import g2pc.ref.dc.client.service.DcValidationService;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SignatureException;
 import java.util.*;
 
 
@@ -48,11 +50,38 @@ public class DcValidationServiceImpl implements DcValidationService {
     @Autowired
     private AsymmetricSignatureService asymmetricSignatureService;
 
-    @Value("${crypto.consumer.support_encryption}")
-    private boolean isEncrypt;
+    @Autowired
+    private ResourceLoader resourceLoader;
 
-    @Value("${crypto.consumer.support_signature}")
-    private boolean isSign;
+    @Value("${crypto.from_dp_farmer.support_encryption}")
+    private boolean isFarmerEncrypt;
+
+    @Value("${crypto.from_dp_farmer.support_signature}")
+    private boolean isFarmerSign;
+
+    @Value("${crypto.from_dp_farmer.password}")
+    private String farmerp12Password;
+
+    @Value("${crypto.from_dp_farmer.key_path}")
+    private String farmerKeyPath;
+
+    @Value("${crypto.from_dp_farmer.id}")
+    private String farmerID;
+
+    @Value("${crypto.from_dp_mobile.support_encryption}")
+    private boolean isMobileEncrypt;
+
+    @Value("${crypto.from_dp_mobile.support_signature}")
+    private boolean isMobileSign;
+
+    @Value("${crypto.from_dp_mobile.password}")
+    private String mobilep12Password;
+
+    @Value("${crypto.from_dp_mobile.key_path}")
+    private String mobileKeyPath;
+
+    @Value("${crypto.from_dp_mobile.id}")
+    private String mobileID;
 
     /**
      * Validate response dto.
@@ -135,14 +164,35 @@ public class DcValidationServiceImpl implements DcValidationService {
     @Override
     public ResponseMessageDTO signatureValidation(Map<String, Object> metaData, ResponseDTO responseDTO) throws Exception {
 
+
+        String p12Password ="";
+        boolean isEncrypt = false;
+        boolean isSign=false;
+        String keyPath="";
+        if(metaData.get(CoreConstants.DP_ID).equals(farmerID)){
+            p12Password = farmerp12Password;
+            isEncrypt = isFarmerEncrypt;
+            isSign = isFarmerSign;
+            keyPath = farmerKeyPath;
+        } else if(metaData.get(CoreConstants.DP_ID).equals(mobileID)){
+            p12Password = mobilep12Password;
+            isEncrypt=isMobileEncrypt;
+            isSign = isMobileSign;
+            keyPath = mobileKeyPath;
+        }
         log.info("Is encrypted ? -> "+isEncrypt);
         log.info("Is signed ? -> "+isSign);
         ObjectMapper objectMapper = new ObjectMapper();
         ResponseMessageDTO messageDTO;
+
+
         if(isSign){
             if(!metaData.get(CoreConstants.IS_SIGN).equals(true)){
                 throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
             }
+            Resource resource = resourceLoader.getResource(keyPath);
+            InputStream fis = resource.getInputStream();
+
             if(isEncrypt){
                 if(!responseDTO.getHeader().getIsMsgEncrypted()){
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
@@ -152,8 +202,13 @@ public class DcValidationServiceImpl implements DcValidationService {
                 String responseSignature = responseDTO.getSignature();
                 String messageString = responseDTO.getMessage().toString();
                 String data = responseHeaderString+messageString;
-                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature)) ){
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature) , fis , p12Password) ){
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                } catch(IOException e){
+                    log.info("Rejecting the on-search request in signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
                 }
                 if(responseDTO.getHeader().getIsMsgEncrypted()){
                     String deprecatedMessageString;
@@ -179,8 +234,13 @@ public class DcValidationServiceImpl implements DcValidationService {
                 String messageString = objectMapper.writeValueAsString(messageDTO);
                 String data = responseHeaderString+messageString;
                 log.info("Signature ->"+responseSignature);
-                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature)) ){
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature) , fis , p12Password) ){
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }catch(IOException e){
+                    log.info("Rejecting the on-search request in signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
                 }
 
             }
