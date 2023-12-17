@@ -25,14 +25,25 @@ public class CoreConstants {
 
     public static final String PAGE_SIZE = "page_size";
 
-    public static final String CLIENT_ID = "client_id";
-
-    public static final String CLIENT_SECRET = "client_secret";
-
     public static final String KEYCLOAK_URL = "keycloak_url";
+
+    public static final String KEYCLOAK_CLIENT_ID = "keycloak_client_id";
+
+    public static final String KEYCLOAK_CLIENT_SECRET = "keycloak_client_secret";
 
     public static final String HASHING_ALGORITHM =  "hashing_algorithm";
 
     public static final String IS_SIGN = "is_sign";
 
+    public static final String DP_ID = "dp_id";
+
+    public static final String SUPPORT_ENCRYPTION = "support_encryption";
+
+    public static final String SUPPORT_SIGNATURE = "support_signature";
+
+    public static final String KEY_PATH = "key_path";
+
+    public static final String KEY_PASSWORD = "key_password";
+
+    public static final String DP_CLEAR_DB_URL = "dp_clear_db_url";
 }

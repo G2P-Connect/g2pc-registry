@@ -6,8 +6,10 @@ import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
 import g2pc.core.lib.dto.common.message.request.SearchCriteriaDTO;
 import g2pc.core.lib.dto.common.security.TokenExpiryDto;
+import g2pc.core.lib.exceptions.G2pcError;
 import kong.unirest.UnirestException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 
 import java.util.List;
@@ -26,7 +28,8 @@ public interface RequestBuilderService {
 
     String buildRequest(List<SearchCriteriaDTO> searchCriteriaDTOList, String transactionId) throws JsonProcessingException;
 
-    Integer sendRequest(String requestString, String uri, String clientId, String clientSecret , String keyClockClientTokenUrl ,   boolean isEncrypt, boolean isSign) throws Exception;
+    G2pcError sendRequest(String requestString, String uri, String clientId, String clientSecret ,
+                          String keyClockClientTokenUrl , boolean isEncrypt, boolean isSign , InputStream fis , String encryptedSalt , String p12Password)  throws Exception;
 
     CacheDTO createCache(String data, String status);
 
