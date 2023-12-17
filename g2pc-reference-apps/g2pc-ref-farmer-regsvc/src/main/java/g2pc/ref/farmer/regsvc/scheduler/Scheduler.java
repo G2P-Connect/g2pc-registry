@@ -2,6 +2,7 @@ package g2pc.ref.farmer.regsvc.scheduler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
@@ -29,12 +30,16 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -43,8 +48,6 @@ public class Scheduler {
     @Value("${client.api_urls.client_search_api}")
     String onSearchURL;
 
-    @Value("${client.api_urls.client_search_public_api}")
-    String onSearchPublicURL;
 
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -58,13 +61,13 @@ public class Scheduler {
     @Autowired
     private TxnTrackerRedisService txnTrackerRedisService;
 
-    @Value("${keycloak.data-consumer.client-id}")
+    @Value("${keycloak.from-dc.client-id}")
     private String dcClientId;
 
-    @Value("${keycloak.data-consumer.client-secret}")
+    @Value("${keycloak.from-dc.client-secret}")
     private String dcClientSecret;
 
-    @Value("${keycloak.data-consumer.url}")
+    @Value("${keycloak.from-dc.url}")
     private String keyClockClientTokenUrl;
 
     @Autowired
@@ -76,6 +79,15 @@ public class Scheduler {
     @Autowired
     private TxnTrackerDbService txnTrackerDbService;
 
+    @Autowired
+    private ResourceLoader resourceLoader;
+
+    @Value("${crypto.to_dc.id}")
+    private String dp_id;
+
+    @Value("${crypto.to_dc.key_path}")
+    private String farmer_key_path;
+
     /**
      * This method is a scheduled task that runs every minute.
      * It retrieves data from a Redis cache, processes it, and sends a response.
@@ -86,8 +98,8 @@ public class Scheduler {
      */
     @Scheduled(cron = "0 */1 * ? * *")// runs every 1 min.
     @Transactional
-    public void responseScheduler() throws IOException {
-        try {
+    public void responseScheduler() throws Exception {
+        //try {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
 
@@ -117,31 +129,39 @@ public class Scheduler {
                     ResponseHeaderDTO headerDTO = responseBuilderService.getResponseHeaderDTO(msgTrackerEntity);
 
                     ResponseMessageDTO responseMessageDTO = responseBuilderService.buildResponseMessage(transactionId, searchResponseDTOList);
+                    Map<String, Object> meta = (Map<String, Object>) headerDTO.getMeta().getData();
+                    meta.put(CoreConstants.DP_ID, dp_id);
+                    requestDTO.getHeader().getMeta().setData(meta);
                     String responseString = responseBuilderService.buildResponseString("signature",
                             headerDTO, responseMessageDTO);
                     responseString = CommonUtils.formatString(responseString);
                     log.info("on-search response = {}", responseString);
-                    sendResponseDemo(responseString, onSearchPublicURL);
-                    //G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(responseString, onSearchURL,dcClientId,dcClientSecret ,keyClockClientTokenUrl);
-                    //if(!g2pcError.getCode().equals(HttpStatus.OK.toString())){
-                    //  throw new G2pHttpException(g2pcError);
-                    //} else {
-                    txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
-                    //}
+                    Resource resource = resourceLoader.getResource(farmer_key_path);
+                    String encryptedSalt = "";
+                    InputStream fis = resource.getInputStream();
+                    G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(responseString, onSearchURL, dcClientId, dcClientSecret, keyClockClientTokenUrl, fis, encryptedSalt);
+                    if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
+                        throw new G2pHttpException(g2pcError);
+                    } else {
+                        txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+
+                    }
                 }
             }
-            //} catch (G2pHttpException e) {
-            //  log.error("Exception thrown from on-search endpoint" + e.getG2PcError().getMessage());
-        } catch (Exception ex) {
-            log.error("Exception in responseScheduler: {}", ex.getMessage());
-        }
+        //} catch (Exception ex) {
+          //  log.error("Exception in responseScheduler: {}", ex.getMessage());
+        //}
     }
 
     private void sendResponseDemo(String responseString, String uri) {
-        HttpResponse<String> response = Unirest.post(uri)
-                .header("Content-Type", "application/json")
-                .body(responseString)
-                .asString();
-        log.info("response send response status = {}", response.getStatus());
+        try {
+            HttpResponse<String> response = Unirest.post(uri)
+                    .header("Content-Type", "application/json")
+                    .body(responseString)
+                    .asString();
+            log.info("response send response status = {}", response.getStatus());
+        } catch (Exception ex) {
+            log.error("Exception in sendResponseDemo: {}", ex.getMessage());
+        }
     }
 }

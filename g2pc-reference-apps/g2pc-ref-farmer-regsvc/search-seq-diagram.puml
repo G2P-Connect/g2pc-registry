@@ -1,0 +1,50 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+Actor actor
+participant RegistryController
+participant BearerTokenUtil
+participant FarmerValidationService
+participant G2pTokenService
+participant AsymmetricSignatureService
+participant G2pEncryptDecrypt
+participant RequestHandlerService
+
+actor -> RegistryController : responseString
+RegistryController -> BearerTokenUtil : getBearerTokenHeader()
+BearerTokenUtil -> RegistryController : return token;
+RegistryController ->G2pTokenService : getInterSpectResponse(introspect, token, adminClientId, adminClientSecret);
+RegistryController <- G2pTokenService : return introspectResponse;
+RegistryController ->RegistryController : if(introspectResponse.getStatusCode)!=200
+RegistryController -> actor : Unauthorized user
+RegistryController -> RegistryController : else
+RegistryController -> G2pTokenService : if(!validateToken(masterAdminUrl, getClientUrl, g2pTokenService.decodeToken(token)))
+RegistryController -> actor : Unauthorized user
+RegistryController ->RegistryController : else
+RegistryController -> FarmerValidationService : signatureValidation(metaData, responseDTO);
+FarmerValidationService -> AsymmetricSignatureService : verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature))
+FarmerValidationService -> G2pEncryptDecrypt : g2pDecrypt(messageString, G2pSecurityConstants.SECRET_KEY);
+FarmerValidationService ->FarmerValidationService : if signature or encryption not validateToken
+FarmerValidationService -> RegistryController : err.invalid.signature or err.encryption.invalid
+RegistryController -> actor : Unauthorized user
+FarmerValidationService -> FarmerValidationService : else
+FarmerValidationService -> RegistryController : return messageDto
+RegistryController -> FarmerValidationService : validateRequestDTO(responseDTO)
+FarmerValidationService -> RegistryController : if(!alidateResponseHeader(responseHeader))
+RegistryController -> actor : err.request.bad
+FarmerValidationService ->FarmerValidationService : else if(!validateRegRecords(messageDTO))
+FarmerValidationService ->actor : err.request.bad
+FarmerValidationService -> FarmerValidationService : else if(!)
+FarmerValidationService -> RequestHandlerService : validateResponseMessage(messageDTO)
+FarmerValidationService ->actor : err.request.bad
+FarmerValidationService -> FarmerValidationService : else
+FarmerValidationService -> RegistryController
+RegistryController -> RequestHandlerService : getResponse(responseDTO);
+RequestHandlerService  ->RegistryController :acknowledgementDTO
+RegistryController ->actor : acknowledgementDTO
+
+
+
+@enduml

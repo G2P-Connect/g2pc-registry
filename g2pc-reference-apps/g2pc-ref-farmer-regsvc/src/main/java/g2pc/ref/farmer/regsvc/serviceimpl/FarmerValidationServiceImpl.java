@@ -28,10 +28,13 @@ import g2pc.ref.farmer.regsvc.service.FarmerValidationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SignatureException;
 import java.util.*;
 
 
@@ -48,17 +51,26 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
     @Autowired
     RequestHandlerService requestHandlerService;
 
-    @Value("${crypto.farmer.support_encryption}")
+    @Value("${crypto.from_dc.support_encryption}")
     private boolean isEncrypt;
 
-    @Value("${crypto.farmer.support_signature}")
+    @Value("${crypto.from_dc.support_signature}")
     private boolean isSign;
+
+    @Value("${crypto.from_dc.password}")
+    private String p12Password;
 
     @Autowired
     private AsymmetricSignatureService asymmetricSignatureService;
 
     @Autowired
     G2pEncryptDecrypt encryptDecrypt;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
+
+    @Value("${crypto.from_dc.key_path}")
+    private String farmer_key_path;
 
     /**
      * Validate request dto.
@@ -142,6 +154,8 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
             if(!metaData.get(CoreConstants.IS_SIGN).equals(true)){
                 throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
             }
+            Resource resource = resourceLoader.getResource(farmer_key_path);
+            InputStream fis = resource.getInputStream();
             if(isEncrypt){
                 if(!requestDTO.getHeader().getIsMsgEncrypted()){
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
@@ -151,14 +165,23 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
                 String requestSignature = requestDTO.getSignature();
                 String messageString = requestDTO.getMessage().toString();
                 String data = requestHeaderString+messageString;
-                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature)) ){
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature) , fis ,p12Password) ){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid ->"+e.getMessage()));
+                }
+                catch(IOException e){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
                 }
                 if(requestDTO.getHeader().getIsMsgEncrypted()){
                     String deprecatedMessageString;
                     try{
                         deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString, G2pSecurityConstants.SECRET_KEY);
                     } catch (RuntimeException e ){
+                        log.info("Rejecting the on-search request in farmer as signature is not valid");
                         throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
                     }
                     log.info("Decrypted Message string ->"+deprecatedMessageString);
@@ -178,9 +201,15 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
                 String messageString = objectMapper.writeValueAsString(messageDTO);
                 String data = requestHeaderString+messageString;
                 log.info("Signature ->"+requestSignature);
-                if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature)) ){
-                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(),"signature is not valid "));
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature) , fis ,p12Password) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
                 }
+                catch(IOException e){
+                log.info("Rejecting the on-search request in farmer as signature is not valid");
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+            }
 
             }
         } else {
@@ -196,6 +225,7 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
                 try{
                     deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
                 } catch (RuntimeException e ){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
                     throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
                 }
                 log.info("Decrypted Message string ->"+deprecatedMessageString);

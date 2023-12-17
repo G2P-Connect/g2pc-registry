@@ -10,7 +10,7 @@ spring:
   datasource:
     driverClassName: org.postgresql.Driver
     url: not_set
-    username: postgres
+    username: not_set
     password: not_set
 
     hikari:
@@ -47,7 +47,7 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: 9001
+  port: not_set
   error:
     include-message: always
 
@@ -55,36 +55,46 @@ spring.data.redis:
   repositories.enabled: false
   host: not_set
   password: not_set
-  port: 6378
+  port: not_set
 
 client:
   api_urls:
-    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
-    client_search_public_api: "http://localhost:8000/public/api/v1/registry/on-search"
+    client_search_api: not_set
 
 keycloak:
-  data-consumer:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
-    client-id: dc-client
-    client-secret: not_set
-  farmer:
-    admin-url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
-  realm: dp-farmer
-  url: https://g2pc-dp1-lab.cdpi.dev/auth
-  admin:
-    realm:
-      client-id: admin-cli
-      client-secret: not_set  # In realm  admin-cli -> secret key
-    client-id: admin-cli
-    client-secret: not_set  # In realm In master admin-cli -> secret key
-    username: admin
+  from_dc:
+    url: not_set
+    clientId: not_set
+    clientSecret: not_set
+  dp:
+    url: not_set
+    username: not_set
     password: not_set
+    master:
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
+    client:
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
+      realmClientId: not_set
+      realmClientSecret: not_set
 
 crypto:
-  consumer:
-    support_encryption: true
-    support_signature: true
-  farmer:
-    support_encryption: true
-    support_signature: true
+  to_dc:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
+  from_dc:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+
+dashboard:
+  dp_dashboard_url: not_set
