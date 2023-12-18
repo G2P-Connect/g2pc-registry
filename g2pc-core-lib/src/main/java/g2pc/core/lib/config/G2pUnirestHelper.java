@@ -22,10 +22,6 @@ import java.util.Map;
 @Lazy
 public class G2pUnirestHelper implements G2pUnirest {
 
-
-    @Autowired
-    UnirestContext unirestContext;
-
     private static final String AUTH = "Authorization";
 
 
@@ -34,15 +30,13 @@ public class G2pUnirestHelper implements G2pUnirest {
     }
 
     protected GetRequest setG2pHeaders(GetRequest request, Map<String, String> keyVal) {
-
         if (null != keyVal)
             keyVal.forEach((k, v) -> request.header(k, v));
         return request;
     }
 
     protected HttpRequestWithBody setG2pHeaders(HttpRequestWithBody request) {
-
-
+        UnirestContext unirestContext = new UnirestContext();
         if (null != unirestContext && StringUtils.isNotBlank(unirestContext.getJwtHeader())) {
             request.header(AUTH, unirestContext.getJwtHeader());
         }

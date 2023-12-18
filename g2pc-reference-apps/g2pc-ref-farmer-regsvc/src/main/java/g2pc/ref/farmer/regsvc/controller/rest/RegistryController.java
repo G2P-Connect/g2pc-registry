@@ -2,7 +2,6 @@ package g2pc.ref.farmer.regsvc.controller.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
@@ -19,10 +18,11 @@ import g2pc.core.lib.security.BearerTokenUtil;
 import g2pc.core.lib.security.service.AsymmetricSignatureService;
 import g2pc.core.lib.security.service.G2pEncryptDecrypt;
 import g2pc.core.lib.security.service.G2pTokenService;
+import g2pc.dp.core.lib.repository.MsgTrackerRepository;
 import g2pc.dp.core.lib.service.RequestHandlerService;
 import g2pc.ref.farmer.regsvc.constants.Constants;
-import g2pc.ref.farmer.regsvc.dto.request.QueryFarmerDTO;
 import g2pc.ref.farmer.regsvc.service.FarmerValidationService;
+import g2pc.ref.farmer.regsvc.utils.DpCommonUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,13 +30,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.security.NoSuchAlgorithmException;
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.Map;
 
 /**
@@ -63,45 +63,14 @@ public class RegistryController {
     @Autowired
     G2pTokenService g2pTokenService;
 
-    @Value("${keycloak.realm}")
-    private String keycloakRealm;
-
-    @Value("${keycloak.url}")
-    private String keycloakURL;
-
-    @Value("${keycloak.farmer.admin-url}")
-    private String masterAdminUrl;
-
-    @Value("${keycloak.farmer.get-client-url}")
-    private String getClientUrl;
-
-    @Value("${crypto.consumer.support_encryption}")
-    private boolean isEncrypt;
-
-    @Value("${crypto.consumer.support_signature}")
-    private boolean isSign;
-
-    @Value("${keycloak.admin.realm.client-id}")
-    private String adminRealmClientId;
-
-    @Value("${keycloak.admin.realm.client-secret}")
-    private String adminRealmClientSecret;
-
-    @Value("${keycloak.admin.client-id}")
-    private String adminClientId;
-
-    @Value("${keycloak.admin.client-secret}")
-    private String adminClientSecret;
-
-    @Value("${keycloak.admin.username}")
-    private String adminUsername;
-
-    @Value("${keycloak.admin.password}")
-    private String adminPassword;
-
     @Autowired
     private AsymmetricSignatureService asymmetricSignatureService;
 
+    @Autowired
+    private DpCommonUtils dpCommonUtils;
+
+    @Autowired
+    private MsgTrackerRepository msgTrackerRepository;
 
     /**
      * Get search request from DC
@@ -135,8 +104,9 @@ public class RegistryController {
      * @return Search request received acknowledgement
      * @throws JsonProcessingException the json processing exception
      * @throws ResponseStatusException the response status exception
-     * @throws G2pcValidationException     the validation exception
+     * @throws G2pcValidationException the validation exception
      */
+    @SuppressWarnings("unchecked")
     @Operation(summary = "Receive search request")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = Constants.SEARCH_REQUEST_RECEIVED),
@@ -145,17 +115,7 @@ public class RegistryController {
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/private/api/v1/registry/search")
     public AcknowledgementDTO registerCandidateInformation(@RequestBody String requestString) throws Exception {
-        log.info("Is encrypted ? -> "+isEncrypt);
-        log.info("Is signed ? -> "+isSign);
-        String token = BearerTokenUtil.getBearerTokenHeader();
-        String introspect = keycloakURL+"/realms/"+keycloakRealm+"/protocol/openid-connect/token/introspect";
-        ResponseEntity<String> introspectResponse =  g2pTokenService.getInterSpectResponse(introspect,token,adminRealmClientId,adminRealmClientSecret);
-        if(introspectResponse.getStatusCode().value()==401){
-            throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(),introspectResponse.getBody()));
-        }
-        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token) , adminClientId , adminClientSecret , adminUsername , adminPassword)){
-            throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
-        }
+        dpCommonUtils.handleToken();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
                 ResponseHeaderDTO.class, HeaderDTO.class);
@@ -164,7 +124,7 @@ public class RegistryController {
                 readValue(requestString);
         RequestMessageDTO messageDTO = null;
 
-        Map <String , Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
+        Map<String, Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
 
         messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
         requestDTO.setMessage(messageDTO);
@@ -175,12 +135,10 @@ public class RegistryController {
                     objectMapper.writeValueAsString(requestDTO), cacheKey);
         } catch (G2pcValidationException e) {
             throw new G2pcValidationException(e.getG2PcErrorList());
-        }
-        catch (JsonProcessingException e){
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR , e.getMessage());
-        }
-        catch (Exception e){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST , e.getMessage());
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -211,6 +169,14 @@ public class RegistryController {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ErrorResponse handleG2pHttpStatusException(G2pHttpException ex) {
         return new ErrorResponse(ex.getG2PcError());
+    }
 
+    /**
+     * Clear message tracker DB
+     */
+    @GetMapping("/private/api/v1/registry/clear-db")
+    public void clearDb() throws G2pHttpException, IOException {
+        dpCommonUtils.handleToken();
+        msgTrackerRepository.deleteAll();
     }
 }

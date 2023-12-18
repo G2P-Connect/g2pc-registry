@@ -4,116 +4,7 @@
 <head>
     <meta charset="ISO-8859-1">
     <title>Dashboard</title>
-    <style>
-        body {
-            background-color: rgba(0, 0, 0, 0.1);
-            color: #fff;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            flex-direction: column;
-        }
-
-        .panel {
-            width: 95%;
-            height: 47%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .topPanel {
-            background-color: transparent;
-        }
-
-        .bottomPanel {
-            background-color: lightyellow;
-            border: 1px solid #fff;
-        }
-
-        .subpanel {
-            width: 50%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid #fff;
-        }
-
-        .subpanel1 {
-            background-color: lightblue;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
-
-        .subpanel2 {
-            background-color: lightsteelblue;
-            margin-left: 5px;
-        }
-
-        .contentPanel {
-            width: 98%;
-            height: 95%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 5px;
-            margin-bottom: 5px;
-        }
-
-        .contentPanel1 {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            border: 1px solid #ffffff;
-            height: auto;
-        }
-
-        .contentPanel1 button {
-            /* add some thing later*/
-        }
-
-        .contentPanel1 input[type="text"] {
-            flex-grow: 1;
-            margin: 0 10px;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            text-align: center;
-            text-decoration: none;
-            display: flex;
-            font-size: 12px;
-            margin: 2px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-            width: auto;
-            padding: 10px;
-            white-space: nowrap;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            width: 100%;
-            box-sizing: border-box;
-            font-size: 12px;
-        }
-
-        .contentPanel2 {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            border: 1px solid #fff;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="../resources/css/styles.css">
 </head>
 <body>
 <div class="panel topPanel">
@@ -121,8 +12,9 @@
         <div class="contentPanel contentPanel1">
             <button id="selectFileButton">Select CSV File</button>
             <input type="file" id="fileInput" style="display: none;">
-            <input type="text" id="fileNameField" placeholder="Enter text here">
+            <label for="fileNameField"></label><input type="text" id="fileNameField" placeholder="Enter text here">
             <button id="submitButton">Submit</button>
+            <button id="resetButton">Reset DB</button>
         </div>
         <div class="contentPanel contentPanel2">
             <iframe title="leftPanelIframe"
@@ -156,20 +48,42 @@
     });
 
     document.getElementById('submitButton').addEventListener('click', function () {
-        let postEndpoint = "http://localhost:8000/public/api/v1/consumer/search/csv";
-        let fileInput = document.getElementById('fileInput');
-        let file = fileInput.files[0];
-        let formData = new FormData();
-        formData.append('file', file);
+        let userConfirmation = confirm("Are you sure you want to submit the file?");
+        if (userConfirmation) {
+            let postEndpoint = "${post_endpoint_url}";
+            let fileInput = document.getElementById('fileInput');
+            let file = fileInput.files[0];
+            let formData = new FormData();
+            formData.append('file', file);
 
-        fetch(postEndpoint, {
-            method: 'POST',
-            body: formData
-        }).then(response => {
-            console.log(response);
-        }).catch(error => {
-            console.error(error);
-        });
+            fetch(postEndpoint, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                console.log(response);
+            }).catch(error => {
+                console.error(error);
+            });
+        }
+    });
+
+    document.getElementById('resetButton').addEventListener('click', function () {
+        let userConfirmation = confirm("Are you sure you want to reset the database?");
+        if (userConfirmation) {
+            let clearDcDbEndpointUrl = "${clear_dc_db_endpoint_url}";
+            let jwtToken = "${jwtToken}";
+            console.log(jwtToken);
+            fetch(clearDcDbEndpointUrl, {
+                method: 'GET',
+                headers: {
+                    "Authorization": jwtToken
+                }
+            }).then(response => {
+                console.log(response);
+            }).catch(error => {
+                console.error(error);
+            });
+        }
     });
 </script>
 </body>

@@ -34,6 +34,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.*;
 
@@ -57,12 +58,14 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
     @Autowired
     G2pTokenService g2pTokenService;
 
-    @Value("${crypto.consumer.support_encryption}")
+    @Value("${crypto.to_dc.support_encryption}")
     private boolean isEncrypt;
 
-    @Value("${crypto.consumer.support_signature}")
+    @Value("${crypto.to_dc.support_signature}")
     private boolean isSign;
 
+    @Value("${crypto.to_dc.password}")
+    private String p12Password;
     @Autowired
     AsymmetricSignatureService asymmetricSignatureService;
 
@@ -130,12 +133,13 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
     }
 
     @Override
-    public G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception {
+    public G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl
+            , InputStream fis , String encryptedSalt) throws Exception {
         log.info("Send on-search response");
         ObjectMapper objectMapper = new ObjectMapper();
         log.info("Is encrypted ? -> "+isEncrypt);
         log.info("Is signed ? -> "+isSign);
-        responseString = createSignature( isEncrypt, isSign , responseString);
+        responseString = createSignature( isEncrypt, isSign , responseString , fis , encryptedSalt);
         String jwtToken = getValidatedToken(keyClockClientTokenUrl, clientId, clientSecret);
         HttpResponse<String> response = g2pUnirestHelper.g2pPost(uri)
                 .header("Content-Type", "application/json")
@@ -230,7 +234,8 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
      * @return
      * @throws Exception
      */
-    private String createSignature( boolean isEncrypt, boolean isSign, String responseString) throws Exception {
+    private String createSignature( boolean isEncrypt, boolean isSign, String responseString
+            , InputStream fis , String encryptedSalt) throws Exception {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
@@ -248,13 +253,13 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
         if(isSign){
             if(isEncrypt){
                 String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-                responseDTO.setMessage(encryptedMessageString);
+                responseDTO.setMessage(encryptedSalt+encryptedMessageString);
                 responseDTO.getHeader().setIsMsgEncrypted(true);
                 Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
                 meta.put(CoreConstants.IS_SIGN,true);
                 responseDTO.getHeader().getMeta().setData(meta);
                 responseHeaderString = objectMapper.writeValueAsString(responseDTO.getHeader());
-                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+encryptedMessageString);
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+encryptedMessageString ,fis ,p12Password);
                 signature = Base64.getEncoder().encodeToString(asymmetricSignature);
                 log.info("Encrypted message ->"+encryptedMessageString);
                 log.info("Hashed Signature ->"+signature);
@@ -264,14 +269,14 @@ public class ResponseBuilderServiceImpl implements ResponseBuilderService {
                 meta.put(CoreConstants.IS_SIGN,true);
                 responseDTO.getHeader().getMeta().setData(meta);
                 responseHeaderString = objectMapper.writeValueAsString(responseDTO.getHeader());
-                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+messageString);
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( responseHeaderString+messageString,fis,p12Password);
                 signature = Base64.getEncoder().encodeToString(asymmetricSignature);
                 log.info("Hashed Signature ->"+signature);
             }
         } else {
             if(isEncrypt){
                 String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-                responseDTO.setMessage(encryptedMessageString);
+                responseDTO.setMessage(encryptedSalt+encryptedMessageString);
                 responseDTO.getHeader().setIsMsgEncrypted(true);
                 Map<String , Object> meta= (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
                 meta.put(CoreConstants.IS_SIGN,false);

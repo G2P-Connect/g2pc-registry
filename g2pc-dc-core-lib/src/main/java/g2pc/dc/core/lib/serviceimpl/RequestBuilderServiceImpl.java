@@ -34,6 +34,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.text.ParseException;
 
@@ -55,6 +56,7 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
 
     @Autowired
     AsymmetricSignatureService asymmetricSignatureService;
+
 
 
     /**
@@ -196,12 +198,14 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
     }
 
     @Override
-    public Integer sendRequest(String requestString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl , boolean isEncrypt, boolean isSign) throws Exception {
+    public G2pcError sendRequest(String requestString, String uri, String clientId, String clientSecret,
+                               String keyClockClientTokenUrl , boolean isEncrypt, boolean isSign , InputStream fis,
+                               String encryptedSalt , String p12Password) throws Exception {
         Boolean isStatusOk = true;
         log.info("Is encrypted ? -> "+isEncrypt);
         log.info("Is signed ? -> "+isSign);
         ObjectMapper objectMapper = new ObjectMapper();
-        requestString = createSignature(isEncrypt ,isSign,requestString);
+        requestString = createSignature(isEncrypt ,isSign, requestString , fis , encryptedSalt , p12Password);
         String jwtToken = getValidatedToken(keyClockClientTokenUrl, clientId, clientSecret);
         log.info("Updated Request -> "+requestString);
         HttpResponse<String> response = g2pUnirestHelper.g2pPost(uri)
@@ -209,28 +213,30 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
                 .header("Authorization", jwtToken)
                 .body(requestString)
                 .asString();
+        G2pcError g2pcError = null;
         if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-            G2pcError g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), response.getBody());
+             g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), response.getBody());
             log.info("Exception is thrown by search endpoint", response.getStatus());
-            throw new G2pHttpException(g2pcError);
+
         } else if (response.getStatus() == HttpStatus.UNAUTHORIZED.value()) {
             ErrorResponse errorResponse = objectMapper.readerFor(ErrorResponse.class).
                     readValue(response.getBody());
-            log.info("Exception is thrown by search endpoint", response.getStatus());
-            throw new G2pHttpException(errorResponse.getG2PcError());
+            g2pcError =  errorResponse.getG2PcError();
         } else if (response.getStatus() == HttpStatus.BAD_REQUEST.value()) {
-            G2pcError g2pcError = new G2pcError(ExceptionsENUM.ERROR_BAD_REQUEST.toValue(), response.getBody());
-            log.info("Exception is thrown by search endpoint", response.getStatus());
-            throw new G2pHttpException(g2pcError);
+             g2pcError = new G2pcError(ExceptionsENUM.ERROR_BAD_REQUEST.toValue(), response.getBody());
         } else if (response.getStatus() != HttpStatus.OK.value()) {
             ErrorResponse errorResponse = objectMapper.readerFor(ErrorResponse.class).
                     readValue(response.getBody());
-            log.info("Exception is thrown by search endpoint", response.getStatus());
-            throw new G2pHttpException(errorResponse.getG2PcError());
-        }
+            g2pcError=  errorResponse.getG2PcError();
+        } else if (response.getStatus() == HttpStatus.OK.value()) {
+             g2pcError = new G2pcError("succ", "request saved in cache");
 
+        }
+        else {
+            g2pcError = new G2pcError("err.service.unavailable", "Internal service error");
+        }
         log.info("request send response status = {}", response.getStatus());
-        return response.getStatus();
+       return  g2pcError;
     }
 
     @Override
@@ -304,7 +310,7 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
         if (g2pTokenService.isTokenExpired(tokenExpiryDto)) {
             G2pTokenResponse tokenResponse = g2pTokenService.getToken(keyCloakUrl, clientId, clientSecret);
             jwtToken = tokenResponse.getAccess_token();
-            saveToken(clientId, g2pTokenService.createTokenExpiryDto(tokenResponse));
+                saveToken(clientId+"-token", g2pTokenService.createTokenExpiryDto(tokenResponse));
         } else {
             jwtToken = tokenExpiryDto.getToken();
         }
@@ -319,7 +325,8 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
      * @return
      * @throws Exception exception is thrown general because there more than 6 exception being thrown by this method.
      */
-    private String createSignature( boolean isEncrypt , boolean isSign, String requestString) throws Exception {
+    private String createSignature( boolean isEncrypt , boolean isSign,
+                                    String requestString , InputStream fis , String encryptionSalt , String p12Password) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
                 ResponseHeaderDTO.class, HeaderDTO.class);
@@ -335,13 +342,13 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
         if(isSign){
             if(isEncrypt){
                 String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-                requestDTO.setMessage(encryptedMessageString);
+                requestDTO.setMessage(encryptionSalt+encryptedMessageString);
                 requestDTO.getHeader().setIsMsgEncrypted(true);
                 Map<String , Object> meta= (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
                 meta.put(CoreConstants.IS_SIGN,true);
                 requestDTO.getHeader().getMeta().setData(meta);
                 requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
-                byte[] asymmetricSignature = asymmetricSignatureService.sign( "salt"+requestHeaderString+encryptedMessageString);
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( requestHeaderString+encryptedMessageString , fis , p12Password);
                 signature = Base64.getEncoder().encodeToString(asymmetricSignature);
                 log.info("Encrypted message ->"+encryptedMessageString);
                 log.info("Hashed Signature ->"+signature);
@@ -351,14 +358,14 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
                 meta.put(CoreConstants.IS_SIGN,true);
                 requestDTO.getHeader().getMeta().setData(meta);
                 requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
-                byte[] asymmetricSignature = asymmetricSignatureService.sign( requestHeaderString+messageString);
+                byte[] asymmetricSignature = asymmetricSignatureService.sign( requestHeaderString+messageString , fis , p12Password);
                 signature = Base64.getEncoder().encodeToString(asymmetricSignature);
                 log.info("Hashed Signature ->"+signature);
             }
         } else {
             if(isEncrypt){
                 String encryptedMessageString = encryptDecrypt.g2pEncrypt(messageString,G2pSecurityConstants.SECRET_KEY);
-                requestDTO.setMessage(encryptedMessageString);
+                requestDTO.setMessage(encryptionSalt+encryptedMessageString);
                 requestDTO.getHeader().setIsMsgEncrypted(true);
                 Map<String , Object> meta= (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
                 meta.put(CoreConstants.IS_SIGN,false);

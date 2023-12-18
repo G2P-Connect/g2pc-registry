@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
-@Scope(value="request", proxyMode= ScopedProxyMode.TARGET_CLASS)
 @Getter
 @Setter
 public class UnirestContext {

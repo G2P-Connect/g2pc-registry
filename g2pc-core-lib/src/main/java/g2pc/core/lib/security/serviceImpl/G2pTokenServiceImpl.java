@@ -121,6 +121,7 @@ public class G2pTokenServiceImpl implements G2pTokenService {
             , String username , String password) throws JsonProcessingException {
         String grantType = "password";
         ObjectMapper objectMapper = new ObjectMapper();
+        ArrayList<Map<String, String>> responseMap = new ArrayList<>();
         HttpResponse<JsonNode> response = Unirest.post(masterAdminUrl)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .field("grant_type", grantType)
@@ -130,13 +131,17 @@ public class G2pTokenServiceImpl implements G2pTokenService {
                 .field("password",password)
                 .asJson();
         Map<String, Object> responseBody = objectMapper.readValue(response.getBody().toString(), new TypeReference<Map<String, Object>>() {});
-        String token = responseBody.get("access_token").toString();
-        HttpResponse<String> clientResponse = g2pUnirestHelper.g2pGet(getClientUrl)
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + token)
-                .asString();
-        ArrayList<Map<String, String>> responseMap = objectMapper.readValue(clientResponse.getBody(), ArrayList.class);
-        return responseMap;
+        if(responseBody.get("access_token")!=null){
+            String token = responseBody.get("access_token").toString();
+            HttpResponse<String> clientResponse = g2pUnirestHelper.g2pGet(getClientUrl)
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + token)
+                    .asString();
+           responseMap  = objectMapper.readValue(clientResponse.getBody(), ArrayList.class);
+
+        }
+
+                return responseMap;
 
     }
 

@@ -11,6 +11,7 @@ import g2pc.dp.core.lib.entity.TxnTrackerEntity;
 import kong.unirest.UnirestException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public interface ResponseBuilderService {
 
     String buildResponseString(String signatureString, ResponseHeaderDTO responseHeaderDTO, ResponseMessageDTO messageDTO) throws JsonProcessingException;
 
-    G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl) throws Exception;
+    G2pcError sendOnSearchResponse(String responseString, String uri, String clientId, String clientSecret, String keyClockClientTokenUrl , InputStream fis , String encryptedSalt) throws Exception;
 
     public void saveToken(String cacheKey, TokenExpiryDto tokenExpiryDto) throws JsonProcessingException;
 

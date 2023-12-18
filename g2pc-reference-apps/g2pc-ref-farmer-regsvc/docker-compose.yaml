@@ -1,0 +1,64 @@
+version: "3.6"
+services:
+
+  # Keycloak Database
+
+  keycloaktestdb:
+    image: postgres:14
+    container_name: keycloaktestdb
+    ports:
+      - 5430:5432
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+      #- ./sql/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql
+    environment:
+      POSTGRES_PASSWORD: p0sTgReSpw4ventivlocal
+
+  # Keycloak
+
+  testventivkeycloak:
+    image: quay.io/keycloak/keycloak:21.0.2
+    container_name: testkeycloak
+    command:
+      [
+        "start-dev",
+        #"-Djboss.http.port=8081",
+        "--http-port=8081",
+        #"--hostname-port=8081",
+        #"--hostname=ventiv-dev.ventiv",
+        #"--http-enabled=false",
+        #"--hostname-strict-https=true",
+        "--http-relative-path=/auth",
+      ]
+    ports:
+      - "8081:8081"
+    depends_on:
+      - keycloaktestdb
+
+    environment:
+      # KC admin
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=kEyCl0aKpw4ventivlocal
+      - SECRET_KEY=edc8525ee8f84d4abc62b212121df09367c7de878e62cc1e7e75f9976931aaa0
+      - BACKEND_BASE_URL=https://44f0-206-84-230-185.ngrok-free.app/api
+      # KC DB details
+      - KEYCLOAK_KERBEROS_ENABLE=false
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://keycloaktestdb/keycloak
+      #- KC_DB_URL_HOST=keycloakdb
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=p0sTgReSpw4ventivlocal
+
+      #   -KC
+      - KC_HOSTNAME_URL=http://localhost:8081/auth/
+      #- KC_SPI_HOSTNAME_DEFAULT_ADMIN=http://localhost:8081/auth/admin
+      - KC_HOSTNAME_ADMIN_URL=http://localhost:8081/auth/
+
+      - KC_HOSTNAME_STRICT=true
+      - KC_HOSTNAME_STRICT_HTTPS=true
+      - KC_EDGE=proxy
+
+      - PROXY_ADDRESS_FORWARDING=true
+      - KEYCLOAK_FRONTEND_URL=http://localhost:8081/auth/
+volumes:
+  keycloak_data:

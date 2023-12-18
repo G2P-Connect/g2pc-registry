@@ -1,7 +1,5 @@
 package g2pc.ref.dc.client.serviceimpl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
@@ -9,13 +7,11 @@ import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import g2pc.core.lib.dto.common.message.request.*;
 import g2pc.core.lib.enums.HeaderStatusENUM;
+import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.utils.CommonUtils;
 import g2pc.dc.core.lib.service.RequestBuilderService;
 import g2pc.dc.core.lib.service.TxnTrackerService;
 import g2pc.ref.dc.client.config.RegistryConfig;
-import g2pc.ref.dc.client.constants.Constants;
-import g2pc.ref.dc.client.entity.RegistryTransactionsEntity;
-import g2pc.ref.dc.client.repository.RegistryTransactionsRepository;
 import g2pc.ref.dc.client.service.DcRequestBuilderService;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -23,29 +19,26 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
+import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 @Slf4j
 public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
-
-    @Autowired
-    private RegistryTransactionsRepository registryTransactionsRepository;
-
-    @Value("${registry.api_urls.farmer_search_api}")
-    private String farmerSearchURL;
-
-    @Value("${registry.api_urls.mobile_search_api}")
-    private String mobileSearchURL;
 
     @Autowired
     private RequestBuilderService requestBuilderService;
@@ -56,51 +49,8 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     @Autowired
     TxnTrackerService txnTrackerService;
 
-    @Value("${keycloak.farmer.clientId}")
-    private String farmerClientId;
-
-    @Value("${keycloak.farmer.clientSecret}")
-    private String farmerClientSecret;
-
-    @Value("${keycloak.mobile.clientId}")
-    private String mobileClientId;
-
-    @Value("${keycloak.mobile.clientSecret}")
-    private String mobileClientSecret;
-
-    @Value("${keycloak.farmer.url}")
-    private String keycloakFarmerTokenUrl;
-
-    @Value("${keycloak.mobile.url}")
-    private String keycloakMobileTokenUrl;
-
-    @Value("${crypto.farmer.support_encryption}")
-    private boolean isFarmerEncrypt;
-
-    @Value("${crypto.farmer.support_signature}")
-    private boolean isFarmerSign;
-
-    @Value("${crypto.mobile.support_encryption}")
-    private boolean isMobileEncrypt;
-
-    @Value("${crypto.mobile.support_signature}")
-    private boolean isMobileSign;
-
-
-    /**
-     * Create initial transaction in DB
-     *
-     * @param transactionId unique transaction id
-     */
-    @Override
-    public void createInitialTransactionInDB(String transactionId) {
-        Optional<RegistryTransactionsEntity> entityOptional = registryTransactionsRepository.getByTransactionId(transactionId);
-        if (entityOptional.isEmpty()) {
-            RegistryTransactionsEntity entity = new RegistryTransactionsEntity();
-            entity.setTransactionId(transactionId);
-            registryTransactionsRepository.save(entity);
-        }
-    }
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     /**
      * Create, save and send a request from payload
@@ -108,11 +58,14 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
      * @param payloadMapList required query params data
      * @return acknowledgement of the request
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
-        acknowledgementDTO.setMessage(Constants.SEARCH_REQUEST_RECEIVED);
-        acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+    public Map<String, G2pcError> generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
+        Map<String, G2pcError> g2pcErrorMap = new HashMap<>();
+
+        String transactionId = CommonUtils.generateUniqueId("T");
+
+        txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
 
         List<Map<String, Object>> queryMapList = requestBuilderService.createQueryMap(payloadMapList, registryConfig.getQueryParamsConfig().entrySet());
         for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
@@ -128,30 +81,32 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
                 searchCriteriaDTOList.add(searchCriteriaDTO);
             }
 
-            String transactionId = CommonUtils.generateUniqueId("T");
-            //txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
-
             String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId);
-            txnTrackerService.saveRequestTransaction(requestString,
-                    registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
-            txnTrackerService.saveRequestInDB(requestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
-            log.info("requestString = {}", requestString);
-            sendRequestDemo(requestString, registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
-           /* requestBuilderService.sendRequest(requestString,
-                    registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.CLIENT_ID).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.CLIENT_SECRET).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString());*/
+            try {
+                Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+                String encryptedSalt = "";
+                InputStream fis = resource.getInputStream();
+                G2pcError g2pcError = requestBuilderService.sendRequest(requestString,
+                        registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                        fis, encryptedSalt,
+                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString());
+                g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
 
-            log.info("Initial Request String for " + configEntryMap.getKey() + ": {}", requestString);
-
-            /*if (configEntryMap.getKey().equals("mobile_registry")) {
-                requestBuilderService.sendRequest(requestString, mobileSearchURL, mobileClientId, mobileClientSecret, keycloakMobileTokenUrl, isMobileEncrypt, isMobileSign);
-            } else {
-                requestBuilderService.sendRequest(requestString, farmerSearchURL, farmerClientId, farmerClientSecret, keycloakFarmerTokenUrl, isFarmerEncrypt, isFarmerSign);
-            }*/
+                txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
+                txnTrackerService.saveRequestTransaction(requestString,
+                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
+                txnTrackerService.saveRequestInDB(requestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+            } catch (Exception e) {
+                log.error("Exception in generateRequest: {}", e);
+            }
         }
-        return acknowledgementDTO;
+        //TODO: convert returning map to acknowledgementDTO
+        return g2pcErrorMap;
     }
 
     /**
@@ -161,16 +116,16 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
      * @return acknowledgement of the request
      */
     @Override
-    public AcknowledgementDTO generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
-        acknowledgementDTO.setMessage(Constants.SEARCH_REQUEST_RECEIVED);
-        acknowledgementDTO.setStatus("RECEIVED");
-
+    public Map<String, G2pcError> generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
         Reader reader = new BufferedReader(new InputStreamReader(payloadFile.getInputStream()));
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
         List<Map<String, Object>> payloadMapList = getPayloadMapList(csvParser);
-        acknowledgementDTO = generateRequest(payloadMapList);
-        return acknowledgementDTO;
+        Map<String, G2pcError> acknowledgement = new HashMap<>();
+        if (ObjectUtils.isNotEmpty(payloadMapList)) {
+            acknowledgement = generateRequest(payloadMapList);
+        }
+        //TODO: convert returning map to acknowledgementDTO
+        return acknowledgement;
     }
 
     private static List<Map<String, Object>> getPayloadMapList(CSVParser csvParser) {

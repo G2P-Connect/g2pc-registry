@@ -4,12 +4,37 @@
 <head>
     <meta charset="ISO-8859-1">
     <title>Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/resources/css/styles.css">
+   <style>
+       body {
+           background-color: rgba(0, 0, 0, 0.1);
+           color: #fff;
+           display: flex;
+           justify-content: space-around;
+           align-items: center;
+           height: 100vh;
+           margin: 0;
+           padding: 0;
+           flex-direction: column;
+       }
+
+       .panel {
+           width: 99%;
+           height: 97%;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+       }
+
+       .contentPanel {
+           background-color: lightyellow;
+           border: 1px solid #fff;
+       }
+   </style>
 </head>
 <body>
 <div class="panel contentPanel">
     <iframe title="My Iframe"
-            src="http://localhost:3005/d-solo/c766225a-d5cf-4c9f-99a7-6f8291f407eb/dp-dashboard?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+            src="${dp_dashboard_url}"
             width="100%"
             height="100%"></iframe>
 </div>

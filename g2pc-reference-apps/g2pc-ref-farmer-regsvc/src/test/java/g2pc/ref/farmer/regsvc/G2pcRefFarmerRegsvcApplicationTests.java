@@ -14,15 +14,16 @@ class G2pcRefFarmerRegsvcApplicationTests {
 	@Autowired
 	private Scheduler scheduler;
 
-
 	@Autowired
 	G2pTokenService g2pTokenService ;
+
 	@Test
 	void contextLoads() {
 	}
 
 	@Test
-	void testResponseScheduler() throws IOException {
+	void testResponseScheduler() throws Exception {
 		scheduler.responseScheduler();
 	}
+
 }

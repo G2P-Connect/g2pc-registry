@@ -10,7 +10,7 @@ spring:
   datasource:
     driverClassName: org.postgresql.Driver
     url: not_set
-    username: postgres
+    username: not_set
     password: not_set
 
     hikari:
@@ -57,56 +57,65 @@ spring.data.redis:
   password: 123456789
   port: 6379
 
-  api_urls:
-    #farmer_search_api: "https://webhook.site/9043a6a4-1710-4af6-a7c6-25a55c6fc903"
-    #mobile_search_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
-    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
-    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
-
 keycloak:
-  farmer:
-    url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
-    clientId: "dp-farmer-client"
-    clientSecret: not_set
-  mobile:
-    url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
-    clientId: "dp-mobile-client"
-    clientSecret: not_set
-  consumer:
-    admin-url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
-  realm: data-consumer
-  url: https://g2pc-dc-lab.cdpi.dev/auth/
-  admin:
-    realm:
-      client-id: admin-cli
-      client-secret: not_set
-    client-id: admin-cli
-    client-secret: not_set  # In realm In master admin-cli -> secret key
-    username: admin
+  from_dp:
+    farmer:
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
+    mobile:
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
+  dc:
+    url: not_set
+    username: not_set
     password: not_set
+    master:
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
+    client:
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
 
 crypto:
-  farmer:
-    support_encryption: true
-    support_signature: true
-  mobile:
-    support_encryption: true
-    support_signature: true
-  consumer:
-    support_encryption: true
-    support_signature: true
-
+  to_dp_farmer:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+  to_dp_mobile:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+  from_dp_farmer:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
+  from_dp_mobile:
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
 
 registry:
   api_urls:
-    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
-    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
-    farmer_search_public _api: "http://localhost:9001/public/api/v1/registry/search"
-    mobile_search_public_api: "http://localhost:9002/public/api/v1/registry/search"
+    farmer_search_api: not_set
+    mobile_search_api: not_set
 
 dashboard:
-  left_panel_url: "http://localhost:3005/d-solo/abce6fd2-95ac-49a6-b743-23d785b3a080/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  right_panel_url: "http://localhost:3005/d-solo/eddad923-f089-4225-a72b-57967e263937/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  bottom_panel_url: "http://localhost:3005/d-solo/e36b8bf2-4bf9-4391-b687-a026426db65f/botton-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-
+  left_panel_url: not_set
+  right_panel_url: not_set
+  bottom_panel_url: not_set
+  post_endpoint_url: not_set
+  clear_dc_db_endpoint_url: not_set
+  clear_dp1_db_endpoint_url: not_set
+  clear_dp2_db_endpoint_url: not_set

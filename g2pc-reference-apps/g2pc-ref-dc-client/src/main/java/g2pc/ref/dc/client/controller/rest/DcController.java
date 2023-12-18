@@ -2,39 +2,45 @@ package g2pc.ref.dc.client.controller.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.config.G2pUnirestHelper;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseDTO;
 import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
-import g2pc.core.lib.enums.ExceptionsENUM;
 import g2pc.core.lib.exceptionhandler.ErrorResponse;
 import g2pc.core.lib.exceptionhandler.ValidationErrorResponse;
 import g2pc.core.lib.exceptions.G2pHttpException;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
-import g2pc.core.lib.security.BearerTokenUtil;
 import g2pc.core.lib.security.service.G2pEncryptDecrypt;
-import g2pc.core.lib.security.service.G2pTokenService;
+import g2pc.dc.core.lib.repository.ResponseDataRepository;
+import g2pc.dc.core.lib.service.RequestBuilderService;
+import g2pc.ref.dc.client.config.RegistryConfig;
 import g2pc.ref.dc.client.constants.Constants;
 import g2pc.ref.dc.client.service.DcRequestBuilderService;
 import g2pc.ref.dc.client.service.DcResponseHandlerService;
 import g2pc.ref.dc.client.service.DcValidationService;
+import g2pc.ref.dc.client.utils.DcCommonUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kong.unirest.HttpRequestWithBody;
+import kong.unirest.HttpResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
 
 @RestController
@@ -56,37 +62,19 @@ public class DcController {
     G2pEncryptDecrypt encryptDecrypt;
 
     @Autowired
-    G2pTokenService g2pTokenService;
+    private DcCommonUtils commonUtils;
 
-    @Value("${keycloak.realm}")
-    private String keycloakRealm;
+    @Autowired
+    private ResponseDataRepository responseDataRepository;
 
-    @Value("${keycloak.url}")
-    private String keycloakURL;
+    @Autowired
+    private RequestBuilderService requestBuilderService;
 
-    @Value("${keycloak.consumer.admin-url}")
-    private String masterAdminUrl;
+    @Autowired
+    private RegistryConfig registryConfig;
 
-    @Value("${keycloak.consumer.get-client-url}")
-    private String getClientUrl;
-
-    @Value("${keycloak.admin.realm.client-id}")
-    private String adminRealmClientId;
-
-    @Value("${keycloak.admin.realm.client-secret}")
-    private String adminRealmClientSecret;
-
-    @Value("${keycloak.admin.client-id}")
-    private String adminClientId;
-
-    @Value("${keycloak.admin.client-secret}")
-    private String adminClientSecret;
-
-    @Value("${keycloak.admin.username}")
-    private String adminUsername;
-
-    @Value("${keycloak.admin.password}")
-    private String adminPassword;
+    @Autowired
+    private G2pUnirestHelper g2pUnirestHelper;
 
     /**
      * Get consumer search request
@@ -101,13 +89,13 @@ public class DcController {
             @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/public/api/v1/consumer/search/payload")
-    public AcknowledgementDTO createSearchRequestsFromPayload(@RequestBody Map<String, Object> payloadMap) throws Exception {
+    public Map<String, G2pcError> createSearchRequestsFromPayload(@RequestBody Map<String, Object> payloadMap) throws Exception {
         log.info("Payload received from postman");
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        Map<String, G2pcError> acknowledgement = new HashMap<>();
         if (ObjectUtils.isNotEmpty(payloadMap)) {
-            acknowledgementDTO = dcRequestBuilderService.generateRequest(Collections.singletonList(payloadMap));
+            acknowledgement = dcRequestBuilderService.generateRequest(Collections.singletonList(payloadMap));
         }
-        return acknowledgementDTO;
+        return acknowledgement;
     }
 
     /**
@@ -123,23 +111,14 @@ public class DcController {
             @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/public/api/v1/consumer/search/csv")
-    public AcknowledgementDTO createSearchRequestsFromCsv(@RequestPart(value = "file") MultipartFile payloadFile) throws Exception {
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+    public Map<String, G2pcError> createSearchRequestsFromCsv(@RequestPart(value = "file") MultipartFile payloadFile) throws Exception {
+        Map<String, G2pcError> acknowledgement = new HashMap<>();
         log.info("Payload received from csv file");
         if (ObjectUtils.isNotEmpty(payloadFile)) {
-            acknowledgementDTO = dcRequestBuilderService.generatePayloadFromCsv(payloadFile);
+            acknowledgement = dcRequestBuilderService.generatePayloadFromCsv(payloadFile);
         }
-        return acknowledgementDTO;
-    }
-
-    @PostMapping("/public/api/v1/registry/on-search")
-    public AcknowledgementDTO demoOnSearch(@RequestBody String responseString) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerSubtypes(RequestHeaderDTO.class,
-                ResponseHeaderDTO.class, HeaderDTO.class);
-        ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
-                readValue(responseString);
-        return dcResponseHandlerService.getResponse(responseDTO);
+        //TODO: convert returning map to acknowledgementDTO
+        return acknowledgement;
     }
 
     /**
@@ -148,6 +127,7 @@ public class DcController {
      * @param responseString required
      * @return On-Search response received acknowledgement
      */
+    @SuppressWarnings("unchecked")
     @Operation(summary = "Listen to registry response")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = Constants.ON_SEARCH_RESPONSE_RECEIVED),
@@ -155,38 +135,25 @@ public class DcController {
             @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/private/api/v1/registry/on-search")
-    public AcknowledgementDTO createSearchRequests(@RequestBody String responseString) throws Exception {
-        String token = BearerTokenUtil.getBearerTokenHeader();
-        String introspect = keycloakURL + "/realms/" + keycloakRealm + "/protocol/openid-connect/token/introspect";
-        ResponseEntity<String> introspectResponse = g2pTokenService.getInterSpectResponse(introspect, token, adminRealmClientId, adminRealmClientSecret);
-        if (introspectResponse.getStatusCode().value() == 401) {
-            throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(), introspectResponse.getBody()));
-        }
-        if(!g2pTokenService.validateToken(masterAdminUrl,getClientUrl , g2pTokenService.decodeToken(token) , adminClientId , adminClientSecret , adminUsername , adminPassword)){
-            throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
-        }
-
+    public AcknowledgementDTO handleOnSearchResponse(@RequestBody String responseString) throws Exception {
+        commonUtils.handleToken();
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
                 ResponseHeaderDTO.class, HeaderDTO.class);
         ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
                 readValue(responseString);
-        ResponseMessageDTO messageDTO = null;
-        Map <String , Object> metaData = (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
-        messageDTO= dcValidationService.signatureValidation(metaData, responseDTO);
+        ResponseMessageDTO messageDTO;
+        Map<String, Object> metaData = (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+        messageDTO = dcValidationService.signatureValidation(metaData, responseDTO);
         responseDTO.setMessage(messageDTO);
         try {
             dcValidationService.validateResponseDto(responseDTO);
             if (ObjectUtils.isNotEmpty(responseDTO)) {
                 acknowledgementDTO = dcResponseHandlerService.getResponse(responseDTO);
             }
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
         return acknowledgementDTO;
     }
@@ -219,5 +186,34 @@ public class DcController {
     public ErrorResponse handleG2pHttpStatusException(G2pHttpException ex) {
         return new ErrorResponse(ex.getG2PcError());
 
+    }
+
+    /**
+     * Clear transaction tracker DB
+     */
+    @SuppressWarnings("unchecked")
+    @GetMapping("/private/api/v1/registry/clear-db")
+    public void clearDb() throws G2pHttpException, IOException {
+        commonUtils.handleToken();
+        responseDataRepository.deleteAll();
+        log.info("DC DB cleared");
+
+        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+            try {
+                Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(configEntryMap.getKey());
+                String jwtToken = requestBuilderService.getValidatedToken(registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString());
+                log.info("jwtToken: {}", jwtToken);
+                log.info("url: {}", registrySpecificConfigMap.get(CoreConstants.DP_CLEAR_DB_URL).toString());
+                HttpResponse<String> response = g2pUnirestHelper.g2pGet(registrySpecificConfigMap.get(CoreConstants.DP_CLEAR_DB_URL).toString())
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", jwtToken)
+                        .asString();
+                log.info("DP " + registrySpecificConfigMap.get(CoreConstants.REG_TYPE) + " DB cleared with response " + response.getStatus());
+            } catch (Exception e) {
+                log.error("Exception in clearDb: {}", e);
+            }
+        }
     }
 }
