@@ -33,10 +33,10 @@
 - The DTOs outlined in this library correspond to the elements specified in the G2p specification’s endpoints. In essence, they represent the key components integral to the functionality described in the G2p standards. E.g -  HeaderDTO , MessageDTO , ResponseDTO , etc. further details are listed in the technical overview. 
 - DTOs are constructed based on the OOPs principle of reusability. Attributes are shared between request bodies and responses are identified, and common elements are defined in parent DTOs. Any remaining specific attributes are then placed in corresponding child DTOs. These can be more explained by the below example.
 E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
-  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/HeaderDTORelationship.png "a title")
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/HeaderDTORelationship.png)
 - This module declares functionalities for token-based authentication, digital signature, and securing messages through encryption using various algorithms. 
 - As per the requirement , these encryption and digital signature functions can be called in the below combination.  
-  ![Alt text]( /home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/Sign-encry-table.png "a title")
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/Sign-encry-table.png)
 - Custom validation exception -
    - JSON schemas have been used for validating both request and response components. 
    - Below Custom validation exceptions are defined 
@@ -63,7 +63,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 - This service is basically to handle and process responses within a system.
 - Below is the communication diagram of DP and DC -
 
-  ![Alt text]( /home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/DC-DP-communication.png "a title")
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/DC-DP-communication.png)
 
 # Data Provider (DP) Implementation
 - In DP implementation , as explained in Overview of libraries , dependency of G2pc-dp-core-lib needs to be added. 
@@ -75,19 +75,19 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
   3. In this endpoint authentication also needs to be defined to ensure that the correct user is accessing the endpoint or not. 
   4. Also need to make sure that the correct signature and valid message is received. 
   5. This requestString will get validated as per g2p specification. Please refer to the link mentioned and image below.
- ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/search-endpoint-spec.png "a title")
+ ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search-endpoint-spec.png)
   6. Once requestString gets validated data provider should save that data in redis cache and transaction data in db and send acknowledgement back to data consumer. Refer below sequence diagram for reference - 
- ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/search_sequence_diagram.png)
+ ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search_sequence_diagram.png)
 - Implementation explained in below point when it act like data consumer -
   1. When it acts like a consumer , it needs to define a scheduler. Scheduler is nothing but a framework that allows you to schedule and execute tasks at specific intervals or times. 
   2. In this scheduler , dp will check whether there is any data stored in pending status with a particular cache key corresponding to that data provider. 
   3. If it gets data it will build the response data and the call /on-search endpoint is defined in the data consumer . Please refer to Image 2 for the same. 
   4. Refer below for understanding of flow from dp to parent libraries. 
- ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-scheduler-sequence-dia.png)
+ ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-scheduler-sequence-dia.png)
 
 # How to create a Data Provider ?
 1. Create a spring boot application with the latest spring-boot version , maven and Java 17. And Click on generate to download.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/spring_boot_dp_creation.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/spring_boot_dp_creation.png)
 2. Extract the downloaded jar and open it in IDE. 
 3. Add below dependencies in pom.xml
 ````
@@ -161,7 +161,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 4. Create package structure shown below.
  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-package-strcuture.png)
 5. Add .p12 file for search and on-search.   
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/.p12-dp.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/.p12-dp.png)
 6. In the config package , create the ObjectMapperConfig.java class.
 ````
 @Configuration
@@ -743,11 +743,11 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
     
 ````
 28. Create a schema folder in the resource folder for respective data provider Query.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp_schema.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp_schema.png)
 29. With reference to below Query of farmer data provider. Refer specification -
     [specification](https://g2p-connect.github.io/specs/release/html/registry_core_api_v1.0.0.html#tag/Async/operation/post_reg_search)
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-specs-json.png)
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-specs.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-specs-json.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-specs.png)
 ````
 {
   "$schema": "https://json-schema.org/draft-04/schema#",
@@ -1027,10 +1027,10 @@ void testResponseScheduler() throws IOException {
 - Data consumers are  going to act as consumers as well as providers.
 Implementation explained in below point when it act like data consumer -
   1. When it acts like a consumer , it needs to define an endpoint which accepts payload . Example Shown in the image below. 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/patload_postman.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/patload_postman.png)
   2. Using this data consumer will decide which data provider’s endpoint it needs to call and which request it needs to build.
   3. Once a request is created /search endpoint it will call and once positive acknowledgement is there it will save pending status in cache for particular transaction id. Refer below for more understanding.
-  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/payload_sequence_diagram.png)
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/payload_sequence_diagram.png)
 - Implementation explained in below point when it act like data provider -
   1. As shown in Figure 2 data provider needs to implement the end point and also make calls to the endpoint of the data provider. 
   2. At first Data consumer service needs to write the /on-search end-point. 
@@ -1038,9 +1038,9 @@ Implementation explained in below point when it act like data consumer -
   4. In this endpoint authentication also needs to be defined to ensure that the correct user is accessing the endpoint or not. 
   5. Also need to make sure that the correct signature and valid message is received. 
   6. This responseString will get validated as per g2p specification. Please refer to the link mentioned and image below.
-  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/on_search_spec.png)
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/on_search_spec.png)
   7. Once responseString gets validated data consumers should update that data in redis cache and send acknowledgement back to the data consumer. Refer below for more understanding.
-  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/on_search_seqeunce_dia.png)
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/on_search_seqeunce_dia.png)
   
 
 
