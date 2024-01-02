@@ -77,7 +77,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
   5. This requestString will get validated as per g2p specification. Please refer to the link mentioned and image below.
  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search-endpoint-spec.png "a title")
   6. Once requestString gets validated data provider should save that data in redis cache and transaction data in db and send acknowledgement back to data consumer. Refer below sequence diagram for reference - 
- ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/search_sequence_diagram.png)
+ ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search_sequence_diagram.png)
 - Implementation explained in below point when it act like data consumer -
   1. When it acts like a consumer , it needs to define a scheduler. Scheduler is nothing but a framework that allows you to schedule and execute tasks at specific intervals or times. 
   2. In this scheduler , dp will check whether there is any data stored in pending status with a particular cache key corresponding to that data provider. 
@@ -159,7 +159,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 </dependency>
 ````
 4. Create package structure shown below.                                                                                         
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-package-strcuture.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-package-strcuture.png)
 5. Add .p12 file for search and on-search.   
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/.p12-dp.png)
 6. In the config package , create the ObjectMapperConfig.java class.
@@ -189,6 +189,8 @@ public class Constants {
    public static final String CACHE_KEY_SEARCH_STRING = "request-farmer*";
    public static final String CACHE_KEY_STRING = "request-farmer-";
    public static final String CONFIGURATION_MISMATCH_ERROR = "Configurations are not matching ";
+   public static final String STATUS_CACHE_KEY_STRING = "status-request-farmer-";
+   public static final String STATUS_CACHE_KEY_SEARCH_STRING = "status-request-farmer*";
 }
 
 ````
@@ -353,9 +355,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp1?currentSchema=g2pc
-    username: postgres
-    password: K6tnrCU0wqXOwPW
+    url: not_set
+    username: not_set
+    password: not_set
 
     hikari:
       data-source-properties:
@@ -391,62 +393,63 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: 9001
+  port: not_set
   error:
     include-message: always
 
 spring.data.redis:
   repositories.enabled: false
-  #  host: 3.109.26.38
-  #  password: cdpi@99221
-  #  port: 6379
-  host: localhost
-  password: 123456789
-  port: 6376
+  host: not_set
+  password: not_set
+  port: not_set
 
 client:
   api_urls:
-    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
+    client_search_api: not_set
+    client_status_api: not_set
 
 keycloak:
   from_dc:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
-    clientId: dc-client
-    clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+    url: not_set
+    clientId: not_set
+    clientSecret: not_set
   dp:
-    url: https://g2pc-dp1-lab.cdpi.dev/auth
-    username: admin
-    password: cdpi@9923
+    url: not_set
+    username: not_set
+    password: not_set
     master:
-      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-      getClientUrl: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
-      clientId: admin-cli
-      clientSecret: G7rVA27HI5UpzMJfomRvaQHubtbAcWcN
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
     client:
-      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token
-      realm: dp-farmer
-      clientId: dp-farmer-client
-      clientSecret: 55VuMuin1T8xbYSUu5zAJAebA05tSwkX
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
+      realmClientId: not_set
+      realmClientSecret: not_set
 
 crypto:
   to_dc:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_on_search"
-    key_path: "classpath:farmer_on_search.p12"
-    id: FARMER
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
   from_dc:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_search"
-    key_path: "classpath:farmer_search.p12"
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
 
 dashboard:
-  dp_dashboard_url: "http://3.109.26.38:3005/d-solo/e62ae08b-a6e1-4095-af79-c36f02b8fae2/dp1-dashboard?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  dp_dashboard_url: not_set
 ````
 14. Add below attributes as per your requirement -  
     1. Change db name (gtwop) , schema name (farmer) , username and password for db connection as per your postgres/mysql connection. 
     2. client.api_urls.client_search_api -> change port as  respective on-search api. 
+    3. client.api_urls.client_status_api -> change port as  respective on-status api.
     3. keycloak.from-dc.url -> create realm for data consumer and replace name with keycloak data-consumer realm name. 
     4. keycloak.from-dc.client-id -> respective client id of created realm. 
     5. keycloak.from-dc.client.secret -> respective client secret of created realm.
@@ -785,86 +788,7 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
         return messageDTO;
     
 ````
-28. Create a schema folder in the resource folder for respective data provider Query.
-![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp_schema.png)
-29. With reference to below Query of farmer data provider. Refer specification -
-    [specification](https://g2p-connect.github.io/specs/release/html/registry_core_api_v1.0.0.html#tag/Async/operation/post_reg_search)
-![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-specs-json.png)
-![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-specs.png)
-````
-{
-  "$schema": "https://json-schema.org/draft-04/schema#",
-  "$id": "https://example.com/message.schema.json",
-  "title": "Query schema",
-  "description": "",
-  "additionalProperties": false,
-  "type": "object",
-      "properties": {
-        "query_name" : {
-          "type": "string"
-        },
-        "query_params": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "$ref": "#/definitions/nonEmptyString",
-              "type": "string"
-            },
-            "farmer_id": {
-              "type": "string",
-              "items": {
-                "$ref": "#/definitions/nonEmptyString",
-                "type": "string"
-              }
-            },
-            "season": {
-              "$ref": "#/definitions/nonEmptyString",
-              "type": "string"
-            }
-          },
-          "required": ["farmer_id","season"]
-        }
-      },
-  "required": ["query_params"],
-  "definitions": {
-    "nonEmptyString": {
-      "type": "string",
-      "minLength": 1
-    }
-  }
-}
-````
-30. Implement method from ValidationService and change schema name in path.
-````
-@Override
-public void validateQueryDto(QueryDTO queryFarmerDTO) throws JsonProcessingException, G2pcValidationException {
-
-ObjectMapper objectMapper = new ObjectMapper();
-log.info("Query object -> " + queryFarmerDTO);
-String queryString = new ObjectMapper()
-       .writerWithDefaultPrettyPrinter()
-       .writeValueAsString(queryFarmerDTO);
-log.info("Query String" + queryString);
-InputStream schemaStreamQuery = FarmerValidationServiceImpl.class.getClassLoader()
-       .getResourceAsStream("schema/farmerQuerySchema.json");
-JsonNode jsonNode = objectMapper.readTree(queryString);
-JsonSchema schema = null;
-if (schemaStreamQuery != null) {
-   schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
-           getSchema(schemaStreamQuery);
-}
-Set<ValidationMessage> errorMessage = schema.validate(jsonNode);
-List<G2pcError> errorcombinedMessage = new ArrayList<>();
-for (ValidationMessage error : errorMessage) {
-   log.info("Validation errors" + error);
-   errorcombinedMessage.add(new G2pcError("", error.getMessage()));
-}
-if (errorMessage.size() > 0) {
-   throw new G2pcValidationException(errorcombinedMessage);
-   }
-
-````
-31. Implement below method from ValidationService in ValidationServiceImpl.
+Implement below method from ValidationService in ValidationServiceImpl.
 ````
 @Override
 public void validateRequestDTO(RequestDTO requestDTO) throws G2pcValidationException, IOException {
@@ -876,13 +800,6 @@ objectMapper.registerSubtypes(QueryDTO.class,
        QueryFarmerDTO.class, QueryParamsFarmerDTO.class);
 byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
 RequestMessageDTO messageDTO =  objectMapper.readValue(json, RequestMessageDTO.class);
-List<SearchRequestDTO> searchRequestList = messageDTO.getSearchRequest();
-for(SearchRequestDTO searchRequestDTO : searchRequestList){
-   String queryString = objectMapper.writeValueAsString(searchRequestDTO.getSearchCriteria().getQuery());
-   QueryDTO queryFarmerDTO = objectMapper.readerFor(QueryDTO.class).
-           readValue(queryString);
-   validateQueryDto(queryFarmerDTO);
-}
 String headerString = new ObjectMapper()
        .writerWithDefaultPrettyPrinter()
        .writeValueAsString(requestDTO.getHeader());
@@ -1064,8 +981,218 @@ catch (Exception ex) {
 void testResponseScheduler() throws IOException {
    scheduler.responseScheduler();
 }
-
 ````
+41. Create new method in RegistryController for /status 
+````
+ @Operation(summary = "Receive status request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = Constants.SEARCH_REQUEST_RECEIVED),
+            @ApiResponse(responseCode = "401", description = Constants.INVALID_AUTHORIZATION),
+            @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
+            @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
+    @PostMapping("/private/api/v1/registry/txn/status")
+    public AcknowledgementDTO handleStatusRequest(@RequestBody String requestString) throws Exception { 
+    }
+````
+42. Add below code for authenticating user
+````
+dpCommonUtils.handleToken();
+````
+43. Add below code for validating the statusRequest and updating cache. 
+````
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class, HeaderDTO.class);
+
+        StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).
+                readValue(requestString);
+        StatusRequestMessageDTO statusRequestMessageDTO = null;
+
+        Map<String, Object> metaData = (Map<String, Object>) statusRequestDTO.getHeader().getMeta().getData();
+
+        statusRequestMessageDTO = farmerValidationService.signatureValidation(metaData, statusRequestDTO);
+        statusRequestDTO.setMessage(statusRequestMessageDTO);
+        String cacheKey = Constants.STATUS_CACHE_KEY_STRING + statusRequestMessageDTO.getTransactionId();
+        try {
+            farmerValidationService.validateStatusRequestDTO(statusRequestDTO);
+            return requestHandlerService.buildCacheStatusRequest(
+                    objectMapper.writeValueAsString(statusRequestDTO), cacheKey);
+        }
+        catch (G2pcValidationException e) {
+            throw new G2pcValidationException(e.getG2PcErrorList());
+        }catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    
+````
+44. Add below overloaded method in FarmerValidationService 
+````
+StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception ;
+````
+45. Override above method in FarmerValidationServiceImpl.
+````
+    @Override
+    public StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        StatusRequestMessageDTO messageDTO;
+        if(isSign){
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(true)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            Resource resource = resourceLoader.getResource(farmer_key_path);
+            InputStream fis = resource.getInputStream();
+            if(isEncrypt){
+                if(!requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+
+                String requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
+                String requestSignature = requestDTO.getSignature();
+                String messageString = requestDTO.getMessage().toString();
+                String data = requestHeaderString+messageString;
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature) , fis ,p12Password) ){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid ->"+e.getMessage()));
+                }
+                catch(IOException e){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
+                }
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    String deprecatedMessageString;
+                    try{
+                        deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString, G2pSecurityConstants.SECRET_KEY);
+                    } catch (RuntimeException e ){
+                        log.info("Rejecting the on-search request in farmer as signature is not valid");
+                        throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
+                    }
+                    log.info("Decrypted Message string ->"+deprecatedMessageString);
+                    messageDTO  = objectMapper.readerFor(StatusRequestMessageDTO.class).
+                            readValue(deprecatedMessageString);
+                } else {
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+            }else{
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, StatusRequestMessageDTO.class);
+                String requestHeaderString = objectMapper.writeValueAsString(requestDTO.getHeader());
+                String requestSignature = requestDTO.getSignature();
+                String messageString = objectMapper.writeValueAsString(messageDTO);
+                String data = requestHeaderString+messageString;
+                log.info("Signature ->"+requestSignature);
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(requestSignature) , fis ,p12Password) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }
+                catch(IOException e){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }
+
+            }
+        } else {
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(false)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            if(isEncrypt){
+                if(!requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                String messageString = requestDTO.getMessage().toString();
+                String deprecatedMessageString;
+                try{
+                    deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                } catch (RuntimeException e ){
+                    log.info("Rejecting the on-search request in farmer as signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
+                }
+                log.info("Decrypted Message string ->"+deprecatedMessageString);
+                messageDTO  = objectMapper.readerFor(StatusRequestMessageDTO.class).
+                        readValue(deprecatedMessageString);
+
+            }else{
+                if(requestDTO.getHeader().getIsMsgEncrypted()){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(requestDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, StatusRequestMessageDTO.class);
+            }
+        }
+        requestDTO.setMessage(messageDTO);
+        return messageDTO;
+    }
+````
+46. Add below method to validated statusRequestMessage in FarmerValidationService.
+````
+void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, G2pcValidationException;
+````
+47. Override above method in FarmerValidationServiceImpl
+````
+@Override
+    public void validateStatusRequestDTO(StatusRequestDTO statusRequestDTO) throws IOException, G2pcValidationException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        byte[] json = objectMapper.writeValueAsBytes(statusRequestDTO.getMessage());
+        StatusRequestMessageDTO statusRequestMessageDTO =  objectMapper.readValue(json, StatusRequestMessageDTO.class);
+        String headerString = new ObjectMapper()
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(statusRequestDTO.getHeader());
+        RequestHeaderDTO headerDTO = objectMapper.readerFor(RequestHeaderDTO.class).
+                readValue(headerString);
+        requestHandlerService.validateRequestHeader(headerDTO);
+        requestHandlerService.validateStatusRequestMessage(statusRequestMessageDTO);
+    }
+````
+48. To call on-status endpoint from dc add below snippet in scheduler class in try block. Refer application zip. 
+    1. Get cache key from redis stored with start of key "status-request-farmer*".
+    2. Iterate list of cache.
+    3. Get request data for particular cache key and convert it into cacheDTO.
+    4. Check if status is pending for that data.
+    5. Get StatusRequestDto from cacheDto and statusRequestMessageDTO from StatusRequestDto.
+    6. Fetch the msgTrackerEntity from db using statusRequestDto and build responseHeaderDto
+    7. Build StatusResponseMessageDto using StatusRequestMessageDto.
+    8. Build StatusResponseString , create resource using farmer key path and send response to dc. 
+````
+List < String > statusCacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.STATUS_CACHE_KEY_SEARCH_STRING);
+for (String cacheKey: statusCacheKeysList) {
+    String requestData = txnTrackerRedisService.getRequestData(cacheKey);
+    CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
+    if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
+        StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).readValue(cacheDTO.getData());
+        StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
+
+        MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveStatusRequestDetails(statusRequestDTO);
+        ResponseHeaderDTO responseHeaderDTO = responseBuilderService.getResponseHeaderDTO(msgTrackerEntity);
+
+        StatusResponseMessageDTO statusResponseMessageDTO = responseBuilderService.buildStatusResponseMessage(statusRequestMessageDTO);
+
+        Map < String, Object > meta = (Map < String, Object > ) responseHeaderDTO.getMeta().getData();
+        meta.put(CoreConstants.DP_ID, dp_id);
+        statusRequestDTO.getHeader().getMeta().setData(meta);
+
+        String statusResponseString = responseBuilderService.buildStatusResponseString("signature", responseHeaderDTO, statusResponseMessageDTO);
+        statusResponseString = CommonUtils.formatString(statusResponseString);
+        log.info("on-status response = {}", statusResponseString);
+        Resource resource = resourceLoader.getResource(farmer_key_path);
+        String encryptedSalt = "";
+        InputStream fis = resource.getInputStream();
+        G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(statusResponseString, onStatusURL, dcClientId, dcClientSecret, keyClockClientTokenUrl, fis, encryptedSalt, CoreConstants.DP_STATUS_URL);
+        if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
+            throw new G2pHttpException(g2pcError);
+        } else {
+            txnTrackerDbService.updateMessageTrackerStatusDb(statusRequestMessageDTO.getTransactionId());
+            txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+        }
+    }
+}
+```` 
 
 # Data Consumer (DC) Implementation
 - In DC implementation , as explained in Overview of libraries , dependency of G2pc-dc-core-lib needs to be added.
@@ -1089,7 +1216,7 @@ Implementation explained in below point when it act like data consumer -
 
 # How to create a Data Consumer ? 
 1. Create a spring boot application with the latest spring-boot version , maven and Java 17. And Click on generate to download.
-  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/spring_boot_dc_creation.png)
+  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/spring_boot_dc_creation.png)
 2. Extract the downloaded jar and open it in IDE. 
 3. Add below dependencies in <dependencies> tag in pom.xml
 ````
@@ -1163,9 +1290,9 @@ Implementation explained in below point when it act like data consumer -
         </dependency>
 ````
 4. Create package structure shown below.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dc-package-structure.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dc-package-structure.png)
 5. Add .p12 files for search received from dp and on-search 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/.p12-dc.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/.p12-dc.png)
 5. In the config package , create the ObjectMapperConfig.java class. This class is used to avoid ambiguity between parent class and child class of Header.
 ````
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1197,9 +1324,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dc1?currentSchema=g2pc
-    username: postgres
-    password: K6tnrCU0wqXOwPW
+    url: not_set
+    username: not_set
+    password: not_set
 
     hikari:
       data-source-properties:
@@ -1241,73 +1368,74 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: 3.109.26.38
-  password: cdpi@99221
+  host: localhost
+  password: 123456789
   port: 6379
-
 
 keycloak:
   from_dp:
     farmer:
-      url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
-      clientId: "dp-farmer-client"
-      clientSecret: "55VuMuin1T8xbYSUu5zAJAebA05tSwkX"
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
     mobile:
-      url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
-      clientId: "dp-mobile-client"
-      clientSecret: "d9yPYp8G2nYLh1ztdeqvdvtxEYqx63Xg"
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
   dc:
-    url: https://g2pc-dc-lab.cdpi.dev/auth
-    username: admin
-    password: cdpi@9922
+    url: not_set
+    username: not_set
+    password: not_set
     master:
-      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-      getClientUrl: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
-      clientId: admin-cli
-      clientSecret: bCfUQy4z4NKiiz82zScJdKGtbKbchkhs
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
     client:
-      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token
-      realm: data-consumer
-      clientId: dc-client
-      clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
 
 crypto:
   to_dp_farmer:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_search"
-    key_path: "classpath:farmer_search.p12"
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
   to_dp_mobile:
-    support_encryption: true
-    support_signature: true
-    password: "mobile_search"
-    key_path: "classpath:mobile_search.p12"
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
   from_dp_farmer:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_on_search"
-    key_path: "classpath:farmer_on_search.p12"
-    id: FARMER
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
   from_dp_mobile:
-    support_encryption: true
-    support_signature: true
-    password: "mobile_on_search"
-    key_path: "classpath:mobile_on_search.p12"
-    id: MOBILE
+    support_encryption: not_set
+    support_signature: not_set
+    password: not_set
+    key_path: not_set
+    id: not_set
 
 registry:
   api_urls:
-    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
-    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
+    farmer_search_api: not_set
+    mobile_search_api: not_set
+    farmer_status_api: not_set
+    mobile_status_api: not_set
 
 dashboard:
-  left_panel_url: "http://3.109.26.38:3005/d-solo/cb26f39f-97f3-43ea-9f42-68d49d9822a3/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  right_panel_url: "http://3.109.26.38:3005/d-solo/d9f9c625-934b-4a65-995f-c742daad6387/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  bottom_panel_url: "http://3.109.26.38:3005/d-solo/a25a6c65-fda7-4fdd-80a7-80442aed17e8/bottom-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  post_endpoint_url: "https://g2pc-dc-lab.cdpi.dev/dc-client/public/api/v1/consumer/search/csv"
-  clear_dc_db_endpoint_url: "http://localhost:8000/private/api/v1/registry/clear-db"
-  clear_dp1_db_endpoint_url: "http://localhost:9001/private/api/v1/registry/clear-db"
-  clear_dp2_db_endpoint_url: "http://localhost:9002/private/api/v1/registry/clear-db"
+  left_panel_url: not_set
+  right_panel_url: not_set
+  bottom_panel_url: not_set
+  post_endpoint_url: not_set
+  clear_dc_db_endpoint_url: not_set
+  clear_dp1_db_endpoint_url: not_set
+  clear_dp2_db_endpoint_url: not_set
 ```` 
 
 7. Add below attributes as per your requirement -
@@ -1318,7 +1446,7 @@ dashboard:
    5. keycloak.from_dp.{dp-name}.url -> url of token creation of particular dp , replace realm name with respective dp.
    6. keycloak.from_dp.{dp-name}.clientId -> client id of particular dp client , check in below image.
    7. keycloak.from_dp.{dp-name}.clientSecret -> client secret of particular dp client , check in below image.
-   ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-dp-client-secret.png)
+   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-dp-client-secret.png)
    8. keycloak.dc.url -> hosting url of dc 
    9. keycloak.dc.username -> authentication username of hosting url of dc
    10. keycloak.dc.password -> authentication password of hosting url of dc
@@ -1330,7 +1458,7 @@ dashboard:
    16. keycloak.dc.client.realm -> dc realm name
    17. keycloak.dc.client.clientId -> dc client id 
    18. keycloak.dc.client.clientSecret -> dc client secret 
-   ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-dc-client.png)
+   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-dc-client.png)
    19. crypto.to_dp_{dp-name}.support_encryption -> encryption flag of particular dp of search endpoint
    20. crypto.to_dp_{dp-name}.support_signature -> signature flag of particular dp of search endpoint
    21. crypto.to_dp_{dp-name}.password -> password of .p12 file particular dp of search endpoint
@@ -1441,7 +1569,7 @@ public class RegistryConfig {}
 @Tag(name = "Data Consumer", description = "DC APIs")
 public class DcController {}
 ````
-13. Create below endpoint for triggering dc communication using only one data.
+13. Create below entrypoint for triggering dc communication using only one data.
 ````
     @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -1461,7 +1589,7 @@ public class DcController {}
     }
     return acknowledgementDTO;
 ````
-15. To run above endpoint refer below curl.
+15. To run above entrypoint refer below curl.
 ````
 curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 --header 'Content-Type: application/json' \
@@ -1474,7 +1602,7 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 }'
 
 ````
-16. Create below end point for triggering dc communication for multiple data using csv file
+16. Create below entry point for triggering dc communication for multiple data using csv file
 ````
  @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -1492,7 +1620,7 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
         return acknowledgementDTO;
     }
 ````
-17. To run above endpoint refer below curl and create one payload.csv with multiple data.
+17. To run above entrypoint refer below curl and create one payload.csv with multiple data.
 ````
 curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
@@ -1605,7 +1733,7 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
                         Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
                         Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
                         fis, encryptedSalt,
-                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString());
+                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(),CoreConstants.DP_SEARCH_URL);
                 g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
                 log.info("DP_SEARCH_URL = {}", registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
 
@@ -1623,7 +1751,7 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
         return acknowledgementDTO;
     }
 ````
-24. To generate request from csv file overwrite below method and one private method to iterate csv file.
+24. To generate request from csv file overwrite below method and one private method to iterate csv file. Used to convert csv multipart file to list of maps
 ````
   @Override
     public AcknowledgementDTO generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
@@ -1636,7 +1764,10 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
         }
         return acknowledgementDTO;
     }
-
+````
+Below method will convert csv file to list of map 
+* map -> key = column title/header , value = each row value
+````
     private static List<Map<String, Object>> getPayloadMapList(CSVParser csvParser) {
         List<CSVRecord> csvRecordList = csvParser.getRecords();
         CSVRecord headerRecord = csvRecordList.get(0);
@@ -1936,100 +2067,10 @@ public class DcValidationServiceImpl implements DcValidationService {
         responseHandlerService.validateResponseHeader(headerDTO);
         byte[] json = objectMapper.writeValueAsBytes(responseDTO.getMessage());
         ResponseMessageDTO messageDTO  =  objectMapper.readValue(json, ResponseMessageDTO.class);
-        validateRegRecords(messageDTO);
         responseHandlerService.validateResponseMessage(messageDTO);
     }
-
-    /**
-     * Validate reg records.
-     *
-     * @param messageDTO the message dto
-     * @throws G2pcValidationException the g 2 pc validation exception
-     * @throws JsonProcessingException the json processing exception
-     */
-    @Override
-    public void validateRegRecords(ResponseMessageDTO messageDTO) throws G2pcValidationException, IOException {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<SearchResponseDTO> searchResponseList = messageDTO.getSearchResponse();
-        for(SearchResponseDTO searchResponseDTO : searchResponseList){
-            DataDTO dataDTO = searchResponseDTO.getData();
-            String regRecordString = new ObjectMapper()
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(dataDTO.getRegRecords());
-            log.info("regRecordString -> " + regRecordString);
-            if(!regRecordString.equals("null")){
-                InputStream schemaStream;
-                if(dataDTO.getRegType().toString().equals("ns:MOBILE_REGISTRY")){
-                    schemaStream  = DcValidationServiceImpl.class.getClassLoader()
-                            .getResourceAsStream("schema/RegRecordMobileSchema.json");
-                } else {
-                    schemaStream = DcValidationServiceImpl.class.getClassLoader()
-                            .getResourceAsStream("schema/RegRecordFarmerSchema.json");
-                }
-                JsonNode jsonNodeMessage = objectMapper.readTree(regRecordString);
-                JsonSchema schemaRegRecord = null;
-                if (schemaStream != null) {
-                    schemaRegRecord = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
-                            getSchema(schemaStream);
-                }
-                Set<ValidationMessage> errorMessage = schemaRegRecord.validate(jsonNodeMessage);
-                List<G2pcError> errorCombinedMessage = new ArrayList<>();
-                for (ValidationMessage error : errorMessage) {
-                    log.info("Validation errors in Reg records" + error);
-                    errorCombinedMessage.add(new G2pcError("", error.getMessage()));
-                }
-                if (errorMessage.size() > 0) {
-                    throw new G2pcValidationException(errorCombinedMessage);
-                }
-            }
-        }
-
-    }
 ````
-33. Add schema to validate regRecord / respective query params , refer below schema
-````
-{
-  "$schema": "https://json-schema.org/draft-04/schema#",
-  "$id": "https://example.com/message.schema.json",
-  "title": "Message schema",
-  "description": "",
-  "additionalProperties": false,
-  "type": "object",
-  "properties": {
-    "farmer_id": {
-      "type": "string",
-      "$ref": "#/definitions/nonEmptyString"
-    },
-    "farmer_name": {
-      "type": "string",
-      "$ref": "#/definitions/nonEmptyString"
-    },
-    "season": {
-      "type": "string",
-      "$ref": "#/definitions/nonEmptyString"
-    },
-    "payment_status": {
-      "type": "string",
-      "$ref": "#/definitions/nonEmptyString"
-    },
-    "payment_date": {
-      "type": "string",
-      "$ref": "#/definitions/nonEmptyString"
-    },
-    "payment_amount": {
-      "type": "number"
-    }
-  }  ,
-  "definitions": {
-    "nonEmptyString": {
-      "type": "string",
-      "minLength": 1
-    }
-  }
-}
-````
-34. Create DcResponseHandlerService interface to handle the response
+33. Create DcResponseHandlerService interface to handle the response
 ````
 public interface DcResponseHandlerService {
 
@@ -2058,28 +2099,279 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
     }
 }
 ````
+35. Create new entrypoint method for /status. 
+````
+ @Operation(summary = "Receive consumer search request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = Constants.SEARCH_REQUEST_RECEIVED),
+            @ApiResponse(responseCode = "401", description = Constants.INVALID_AUTHORIZATION),
+            @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
+            @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
+    @PostMapping("/private/api/v1/consumer/status/payload")
+    public AcknowledgementDTO createStatusRequest(@RequestParam String transactionId , @RequestParam String transactionType) throws Exception {
+        log.info("Payload received from csv file");
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        if (ObjectUtils.isNotEmpty(transactionId)) {
+            acknowledgementDTO = dcRequestBuilderService.generateStatusRequest(transactionId,transactionType);
+        }
+        return acknowledgementDTO;
+    }
+````
+Refer below curl to execute above entrypoint. In which you can see we are sending transactionId for which we wanted to know status and action/transactionType for which we are searching status.
+````
+curl --location \
+ --request \
+ POST 'localhost:8000/private/api/v1/consumer/status/payload?transactionId=T757-5372-9253-9725-4673&transactionType=search'
+````
+36. Declare below method in DcRequestBuilderService interface to generate request for /status endpoint. 
+````
+ AcknowledgementDTO generateStatusRequest(String transactionID,String transactionType) throws Exception;
+````
+37. Override the above method in DcRequestBuilderServiceImpl class.
+    1. Generate unique transaction id for status transaction. 
+    2. Find registryType from response_tracker and response using transactionId given from postman.
+    3. Fetch registry specific map from registryConfig class , as it returns values specified for registry like url and credentials.
+    4. Call buildTransactionRequest() method by passing transaction id and transactionType given by postman.
+    5. Invoke buildStatusRequest() method by passing txnStatusRequestDTO,statusRequestTransactionId and type of transaction. 
+    6. Create resource and inputstream using keypath mentioned in application.yml.
+    7. Call sendRequest() and pass dp status endpoint url, keycloak client id , client secret , url , encryption-signature flags , .p12 file password and status url flag to identify the method is called for status operation.
+    8. Invoke saveInitialStatusTransaction() , to save initial transaction id dc redis.
+    9. Call saveRequestTransaction() , to save requestString along transactionId.
+    10. Call saveRequestInStatusDB() , to save the data in dc side tables.
+````
+ @Override
+    public AcknowledgementDTO generateStatusRequest(String transactionID,String transactionType) throws Exception {
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        String statusRequestTransactionId= CommonUtils.generateUniqueId("T");
+        Optional<ResponseTrackerEntity> responseTrackerEntityOptional = responseTrackerRepository.findByTransactionId(transactionID);
+        ResponseTrackerEntity responseTrackerEntity = responseTrackerEntityOptional.get();
+        String registryType = responseTrackerEntity.getRegistryType().substring(3).toLowerCase();
+        Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(registryType);
+        TxnStatusRequestDTO txnStatusRequestDTO = requestBuilderService.buildTransactionRequest(transactionID,transactionType);
+        String statusRequestString = requestBuilderService.buildStatusRequest(txnStatusRequestDTO,statusRequestTransactionId , ActionsENUM.STATUS);
+        G2pcError g2pcError = null;
+        try {
+            Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+            String encryptedSalt = "";
+            InputStream fis = resource.getInputStream();
+            g2pcError = requestBuilderService.sendRequest(statusRequestString,
+                    registrySpecificConfigMap.get(CoreConstants.DP_STATUS_URL).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
+                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                    Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                    Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                    fis, encryptedSalt,
+                    registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(),CoreConstants.DP_STATUS_URL);
+            log.info(""+g2pcError);
+                   } catch (Exception e) {
+            log.error("Exception in generateRequest : ", e);
+        }
+        txnTrackerService.saveInitialStatusTransaction(transactionType , statusRequestTransactionId, HeaderStatusENUM.RCVD.toValue());
+        txnTrackerService.saveRequestTransaction(statusRequestString,
+                registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), statusRequestTransactionId);
+         txnTrackerService.saveRequestInStatusDB(statusRequestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+        acknowledgementDTO.setMessage(g2pcError);
+        acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
 
+        return  acknowledgementDTO;
+    }
+````
+38. Define the below method in DcController to create /on-status endpoint which will get call from dp side.
+    1. call commonUtils.handleToken() method to authenticate user.
+    2. Declare objectMapper and add neccessary dependencies.
+    3. Get statusResponseDto by converting string to object using objectMapper.
+    4. Get validated signature statusResponseMessageDto by call signatureValidation() method.
+    5. Validated statusResponseDto as per g2p specification.
+    6. call getStatusResponse(). 
+````
+ @SuppressWarnings("unchecked")
+    @Operation(summary = "Listen to registry response")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = Constants.ON_SEARCH_RESPONSE_RECEIVED),
+            @ApiResponse(responseCode = "401", description = Constants.INVALID_AUTHORIZATION),
+            @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
+            @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
+    @PostMapping("/private/api/v1/registry/on-status")
+    public AcknowledgementDTO handleOnStatusResponse(@RequestBody String responseString) throws Exception {
+        commonUtils.handleToken();
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                ResponseHeaderDTO.class, HeaderDTO.class);
+        StatusResponseDTO statusResponseDTO = objectMapper.readerFor(StatusResponseDTO.class).
+                readValue(responseString);
+        StatusResponseMessageDTO statusResponseMessageDTO;
+        Map<String, Object> metaData = (Map<String, Object>) statusResponseDTO.getHeader().getMeta().getData();
+        statusResponseMessageDTO = dcValidationService.signatureValidation(metaData, statusResponseDTO);
+        statusResponseDTO.setMessage(statusResponseMessageDTO);
+        try {
+            dcValidationService.validateStatusResponseDTO(statusResponseDTO);
+            if (ObjectUtils.isNotEmpty(statusResponseDTO)) {
+                acknowledgementDTO = dcResponseHandlerService.getStatusResponse(statusResponseDTO);
+            }
+        } catch (JsonProcessingException | IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+        return acknowledgementDTO;
+    }
+````
+39. Add below 2 methods in DcValidationService for signatureValidation of statusResponseMessageDto and validate statusResponseDto.
+````
+    StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception;
+
+    void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException;
+````
+40. Override signatureValidation() method in DcValidationServiveImpl.
+````
+@Override
+    public StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception {
+        String p12Password ="";
+        boolean isEncrypt = false;
+        boolean isSign= false;
+        String keyPath="";
+        if(metaData.get(CoreConstants.DP_ID).equals(farmerID)){
+            p12Password = farmerp12Password;
+            isEncrypt = isFarmerEncrypt;
+            isSign = isFarmerSign;
+            keyPath = farmerKeyPath;
+        } else if(metaData.get(CoreConstants.DP_ID).equals(mobileID)){
+            p12Password = mobilep12Password;
+            isEncrypt=isMobileEncrypt;
+            isSign = isMobileSign;
+            keyPath = mobileKeyPath;
+        }
+        log.info("Is encrypted ? -> "+isEncrypt);
+        log.info("Is signed ? -> "+isSign);
+        ObjectMapper objectMapper = new ObjectMapper();
+        StatusResponseMessageDTO messageDTO;
+
+
+        Boolean isMsgEncrypted = statusResponseDTO.getHeader().getIsMsgEncrypted();
+        if(isSign){
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(true)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            Resource resource = resourceLoader.getResource(keyPath);
+            InputStream fis = resource.getInputStream();
+
+            if(isEncrypt){
+                if(!isMsgEncrypted){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+
+                String responseHeaderString = objectMapper.writeValueAsString(statusResponseDTO.getHeader());
+                String responseSignature = statusResponseDTO.getSignature();
+                String messageString = statusResponseDTO.getMessage().toString();
+                String data = responseHeaderString+messageString;
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature) , fis , p12Password) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                } catch(IOException e){
+                    log.info("Rejecting the on-search request in signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
+                }
+                if(isMsgEncrypted){
+                    String deprecatedMessageString;
+                    try{
+                        deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString, G2pSecurityConstants.SECRET_KEY);
+                    } catch (RuntimeException e ){
+                        throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(), "Error in Encryption/Decryption"));
+                    }
+                    log.info("Decrypted Message string ->"+deprecatedMessageString);
+                    messageDTO  = objectMapper.readerFor(StatusResponseMessageDTO.class).
+                            readValue(deprecatedMessageString);
+                } else {
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(), Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+            }else{
+                if(isMsgEncrypted){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(statusResponseDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, StatusResponseMessageDTO.class);
+                String responseHeaderString = objectMapper.writeValueAsString(statusResponseDTO.getHeader());
+                String responseSignature = statusResponseDTO.getSignature();
+                String messageString = objectMapper.writeValueAsString(messageDTO);
+                String data = responseHeaderString+messageString;
+                log.info("Signature ->"+responseSignature);
+                try{if(! asymmetricSignatureService.verifySignature(data.getBytes(), Base64.getDecoder().decode(responseSignature) , fis , p12Password) ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }}catch(SignatureException e){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), "signature is not valid "));
+                }catch(IOException e){
+                    log.info("Rejecting the on-search request in signature is not valid");
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_SIGNATURE_INVALID.toValue(), e.getMessage()));
+                }
+
+            }
+        } else {
+            if(!metaData.get(CoreConstants.IS_SIGN).equals(false)){
+                throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+            }
+            if(isEncrypt){
+                if(!isMsgEncrypted){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                String messageString = statusResponseDTO.getMessage().toString();
+                String deprecatedMessageString;
+                try{
+                    deprecatedMessageString= encryptDecrypt.g2pDecrypt(messageString,G2pSecurityConstants.SECRET_KEY);
+                } catch (RuntimeException e ){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_ENCRYPTION_INVALID.toValue(),"Error in Encryption/Decryption"));
+                }
+                log.info("Decrypted Message string ->"+deprecatedMessageString);
+                messageDTO  = objectMapper.readerFor(StatusResponseMessageDTO.class).
+                        readValue(deprecatedMessageString);
+
+            }else{
+                if(isMsgEncrypted){
+                    throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_VERSION_NOT_VALID.toValue(),Constants.CONFIGURATION_MISMATCH_ERROR));
+                }
+                byte[] json = objectMapper.writeValueAsBytes(statusResponseDTO.getMessage());
+                messageDTO =  objectMapper.readValue(json, StatusResponseMessageDTO.class);
+            }
+        }
+        return messageDTO;
+    }
+````
+41. Override validateStatusResponseDTO() method in DcValidationServiveImpl.
+````
+@Override
+    public void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String headerString = new ObjectMapper()
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(statusResponseDTO.getHeader());
+        ResponseHeaderDTO headerDTO = objectMapper.readerFor(ResponseHeaderDTO.class).
+                readValue(headerString);
+        byte[] json = objectMapper.writeValueAsBytes(statusResponseDTO.getMessage());
+        StatusResponseMessageDTO statusResponseMessageDTO  =  objectMapper.readValue(json, StatusResponseMessageDTO.class);
+        responseHandlerService.validateStatusResponseMessage(statusResponseMessageDTO);
+    }
+````
 # Keycloak configuration
 ## Steps for DC and DP -
 1. Create data-consumer/data-provider realm. Click on Add realm shown below. 
-![Alt-text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-realm-creation.png)
+![Alt-text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-realm-creation.png)
 2. Enter appropriate name in small cases.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-add-realm.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-add-realm.png)
 3. Change token expiry time as per requirement of testing. 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-token-expiry.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-token-expiry.png)
 4. Create client. 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-create-realm-button.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-create-realm-button.png)
 5. Add appropriate client name.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-create-client.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-create-client.png)
 6. Select Access type is confidential , enable service account and Enable Authorization. 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-client-auth-setting.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-client-auth-setting.png)
 7. Refer below image for client secret 
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-dc-client.png)
-8. Enable above all setting for admin-cli client and admin cli of master realm aswell.
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-dc-client.png)
+8. Enable above all setting for admin-cli client and admin cli of master realm as well.
 9. Add below scopes in client scope of admin-cli of master realm.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-master-admin-cli-client-scope.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-master-admin-cli-client-scope.png)
 10. Add below scopes in scope of admin-cli of master realm.
-![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/keycloak-master-admin-cli-scope.png)
+![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-master-admin-cli-scope.png)
 
 
   
