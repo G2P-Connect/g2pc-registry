@@ -1,4 +1,4 @@
-# Overview of G2p connect - Registry
+# 1. Overview of G2p connect - Registry
 - Governments give money to people for various reasons like subsidies, pensions, scholarships, and emergency help. People can choose how they want to receive this money, like in cash, through their bank, on their phone, or with vouchers.
 
 - But, each government department has to set up its own system to check if people are eligible for the money, make sure transactions are real, and actually send the money. They have to talk to different departments to gather all the needed information, and this leads to a lot of duplicate work and problems.
@@ -8,7 +8,7 @@
 - G2P Connect is an open-source project that helps different government agencies in a country work together to deliver digital payments from start to finish.
 - The G2P transaction process involves an individual asking for money, providing their ID, and going through some security steps. The system checks if they qualify by looking at different government databases.
 
-## G2p specifications
+## 2. G2p specifications
 - G2P Connect API Specifications is a project that makes it easy for different systems to work together. It sets rules for how they should talk to each other
 - The main goals of G2P Connect Specifications are to make sure systems can work seamlessly together and follow the rules set by the country. It also aims to be flexible, meaning it can adapt to existing standards and use common methods like OAuth2 for security.
 - The message structure used in G2P Connect is like a package with a signature and a header. The header includes important information like the version, message ID, and what action is being taken.
@@ -18,8 +18,8 @@
 - In simple terms, G2P Connect API Specifications is like a rulebook that different systems follow to work together when giving money to people. It's flexible, secure, and makes sure everyone understands each other.
 
 
-# Overview / List of libraries
-### 1. G2pc-core-lib - 
+# 3. Overview / List of libraries
+### 3.1 G2pc-core-lib - 
 - The G2pc-core-lib serves as a central hub for managing shared, reusable elements within the G2p specification
 - This includes 80% of reusable features, DTOs, and configurations consistent across all data providers and consumers. 
 - The core library encapsulates below essential components - 
@@ -47,7 +47,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 - Note - All these changes have been done on the basis of G2p specification. 
 
 
-### 2. G2pc-dp-core-lib
+### 3.2 G2pc-dp-core-lib
 - The G2pc-dp-core-lib defines entities and services specific to data providers. 
 - It incorporates methods for constructing responses and managing requests within custom data provider services. 
 - This library encapsulates both an entity and repositories responsible for handling the data stored in tables dedicated to message tracking and transaction information. 
@@ -55,7 +55,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 - It also includes building cache requests, validating request headers and messages against JSON schemas, and handling transaction tracking in both Redis and a database. 
 - It integrates with other services and provides detailed error handling and logging. Also constructing response DTOs, managing encryption and signatures, sending responses via HTTP, and handling tokens.
 
-### 3. G2pc-dc-core-lib
+### 3.3 G2pc-dc-core-lib
 - The G2pc-dc-core-lib defines entities and services specific to data consumers. 
 - It incorporates methods for constructing requests and managing responses within custom data consumer services.
 - This library defines functionality for building and sending requests in a secure manner, involving encryption, digital signatures, token management, and caching.
@@ -65,7 +65,7 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
 
   ![Alt text]( https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/DC-DP-communication.png "a title")
 
-# Data Provider (DP) Implementation
+# 4.  Data Provider (DP) Implementation
 - In DP implementation , as explained in Overview of libraries , dependency of G2pc-dp-core-lib needs to be added. 
 - Data provider is going to act as provider as well as consumer as.
 - As shown in Figure 2 data provider needs to implement the end point and also make calls to the endpoint of the data consumer. 
@@ -77,86 +77,101 @@ E.g - HeaderDTO , RequestHeaderDTO and ResponseHeaderDTO , etc.
   5. This requestString will get validated as per g2p specification. Please refer to the link mentioned and image below.
  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search-endpoint-spec.png "a title")
   6. Once requestString gets validated data provider should save that data in redis cache and transaction data in db and send acknowledgement back to data consumer. Refer below sequence diagram for reference - 
- ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/search_sequence_diagram.png)
+ ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-search-sequence-diagram.png)
 - Implementation explained in below point when it act like data consumer -
   1. When it acts like a consumer , it needs to define a scheduler. Scheduler is nothing but a framework that allows you to schedule and execute tasks at specific intervals or times. 
   2. In this scheduler , dp will check whether there is any data stored in pending status with a particular cache key corresponding to that data provider. 
   3. If it gets data it will build the response data and the call /on-search endpoint is defined in the data consumer . Please refer to Image 2 for the same. 
   4. Refer below for understanding of flow from dp to parent libraries. 
- ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-scheduler-sequence-dia.png)
+ ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dp-scheduler-seq-diagram.png)
 
-# How to create a Data Provider ?
+# 5. How to create a Data Provider ?
 1. Create a spring boot application with the latest spring-boot version , maven and Java 17. And Click on generate to download.
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/spring_boot_dp_creation.png)
 2. Extract the downloaded jar and open it in IDE. 
 3. Add below dependencies in pom.xml
 ````
-<dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter</artifactId>
-</dependency>
-<dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter-web</artifactId>
-</dependency>
-<dependency>
-   <groupId>org.projectlombok</groupId>
-   <artifactId>lombok</artifactId>
-   <optional>true</optional>
-</dependency>
-<dependency>+
-   <groupId>g2pc.dp.core.lib</groupId>
-   <artifactId>g2pc-dp-core-library</artifactId>
-   <version>0.0.1-SNAPSHOT</version>
-</dependency>
-<dependency>
-   <groupId>com.fasterxml.jackson.dataformat</groupId>
-   <artifactId>jackson-dataformat-xml</artifactId>
-   <version>2.15.0</version>
-</dependency>
-<dependency>
-   <groupId>org.postgresql</groupId>
-   <artifactId>postgresql</artifactId>
-   <version>42.5.4</version>
-</dependency>
-<dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter-data-jpa</artifactId>
-</dependency>
-<dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter-test</artifactId>
-   <scope>test</scope>
-</dependency>
-<dependency>
-   <groupId>org.springdoc</groupId>
-   <artifactId>springdoc-openapi-ui</artifactId>
-   <version>1.6.15</version>
-</dependency>
-<dependency>
-   <groupId>org.springframework.security</groupId>
-   <artifactId>spring-security-web</artifactId>
-   <version>6.1.2</version>
-</dependency>
-<dependency>
-   <groupId>com.auth0</groupId>
-   <artifactId>java-jwt</artifactId>
-   <version>4.4.0</version>
-</dependency>
-<dependency>
-   <groupId>jakarta.validation</groupId>
-   <artifactId>jakarta.validation-api</artifactId>
-   <version>3.0.2</version>
-</dependency>
-<dependency>
-   <groupId>org.springframework.security</groupId>
-   <artifactId>spring-security-config</artifactId>
-   <version>6.1.2</version>
-</dependency>
-<dependency>
-   <groupId>org.springframework.boot</groupId>
-   <artifactId>spring-boot-starter-validation</artifactId>
-</dependency>
+         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>g2pc.dp.core.lib</groupId>
+            <artifactId>g2pc-dp-core-library</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>2.15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.6.15</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>6.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>4.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>6.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>jstl</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
+        </dependency>
 ````
 4. Create package structure shown below.                                                                                         
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dp-package-strcuture.png)
@@ -204,12 +219,7 @@ public class RegistryController {
 }
 
 ````
-9. Add below controller class for dashboard purpose.
-````
-@Controller
-public class DpDashboardController {
-````
-10. In the service package , create the respective DP ResponseBuilderService.java interface. Refer below example.
+9. In the service package , create the respective DP ResponseBuilderService.java interface. Refer below example.
 ````
 public interface FarmerResponseBuilderService {
    RegRecordFarmerDTO getRegRecordFarmerDTO(FarmerInfoEntity farmerInfoEntity);
@@ -219,8 +229,7 @@ public interface FarmerResponseBuilderService {
 ````
 public interface FarmerValidationService {
    void validateRequestDTO (RequestDTO requestDTO) throws Exception;
-   void validateQueryDto (QueryDTO queryFarmerDTO) throws G2pcValidationException, JsonProcessingException;
-   RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO ) throws Exception;
+    RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO ) throws Exception;
 }
 
 ````
@@ -238,7 +247,7 @@ public class FarmerResponseBuilderServiceImpl implements FarmerResponseBuilderSe
 public class FarmerValidationServiceImpl implements FarmerValidationService {
  } 
 ````
-12. Create DpCommonUtils for handling token. 
+12. Create DpCommonUtils for handling token and sftp request.
 ````
 import com.fasterxml.jackson.core.JsonProcessingException;
 import g2pc.core.lib.enums.ExceptionsENUM;
@@ -298,15 +307,27 @@ public class DpCommonUtils {
 
     @Autowired
     G2pTokenService g2pTokenService;
-````
-14.  Create handleToken() method.
-````
- public void handleToken() throws G2pHttpException, JsonProcessingException {
 
+    @Value("${sftp.dc.host}")
+    private String sftpDcHost;
+
+    @Value("${sftp.dc.port}")
+    private int sftpDcPort;
+
+    @Value("${sftp.dc.user}")
+    private String sftpDcUser;
+
+    @Value("${sftp.dc.password}")
+    private String sftpDcPassword;
+
+    @Value("${sftp.dc.remote.outbound_directory}")
+    private String sftpDcRemoteOutboundDirectory;
 ````
-15. Add below code to introspect the token whether it is from valid keycloak dp or not in handleToken() method.
+14.  Create handleToken() method to introspect the token whether it is from valid keycloak dp or not in handleToken() method and validateToken using g2pc-core predefined methods.
 ````
-  log.info("Is encrypted ? -> " + isEncrypt);
+ 
+ public void handleToken() throws G2pHttpException, JsonProcessingException {
+        log.info("Is encrypted ? -> " + isEncrypt);
         log.info("Is signed ? -> " + isSign);
         String token = BearerTokenUtil.getBearerTokenHeader();
         String introspectUrl = keycloakURL + "/introspect";
@@ -317,18 +338,30 @@ public class DpCommonUtils {
         if (introspectResponse.getStatusCode().value() == 401) {
             throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(), introspectResponse.getBody()));
         }
-````
-16. Add below code in handleToken() method for validateToken using g2pc-core predefined methods.
-````
- if (!g2pTokenService.validateToken(masterUrl, getClientUrl,
+
+        if (!g2pTokenService.validateToken(masterUrl, getClientUrl,
                 g2pTokenService.decodeToken(token), masterClientId, masterClientSecret,
                 adminUsername, adminPassword)) {
-            //TODO:check this -> done
+          
             throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
         }
+        
 ````
-17. 
-13. Add below autowired dependencies in the RegistryController class.
+15. Add getSftpConfigForDp() in DpCommonUtils to fetch sftp configurations.
+````
+  public SftpServerConfigDTO getSftpConfigForDp() {
+        SftpServerConfigDTO sftpServerConfigDTO = new SftpServerConfigDTO();
+        sftpServerConfigDTO.setHost(sftpDcHost);
+        sftpServerConfigDTO.setPort(sftpDcPort);
+        sftpServerConfigDTO.setUser(sftpDcUser);
+        sftpServerConfigDTO.setPassword(sftpDcPassword);
+        sftpServerConfigDTO.setAllowUnknownKeys(true);
+        sftpServerConfigDTO.setStrictHostKeyChecking("no");
+        sftpServerConfigDTO.setRemoteOutboundDirectory(sftpDcRemoteOutboundDirectory);
+        return sftpServerConfigDTO;
+    }
+````
+17. Add below autowired dependencies in the RegistryController class.
 ````
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -342,7 +375,7 @@ public class DpCommonUtils {
     @Autowired
     private MsgTrackerRepository msgTrackerRepository;
 ````
-13. Add below application.yml and update as per below instructions.
+18. Add below application.yml and update as per below instructions.
 ````
 spring:
   mvc:
@@ -355,9 +388,10 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: not_set
-    username: not_set
-    password: not_set
+    # Add db name, schema name, username and password for db connection as per your postgres/mysql connection.
+    url: jdbc:postgresql://{Domain-id}}:{port}/{Database name}?currentSchema={Schema name}
+    username: {username of database connection}
+    password: {password of database connection}
 
     hikari:
       data-source-properties:
@@ -393,90 +427,97 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: not_set
+  port: {add port as per requirement}
   error:
     include-message: always
 
+# This is redis connection configuration
 spring.data.redis:
   repositories.enabled: false
-  host: not_set
-  password: not_set
-  port: not_set
+  host: {host domain of redis connection}
+  password: {password of redis port}
+  port: {port of redis connection}
 
+# These are dc side url. Add respective host name e.g. - localhost and port e.g. - 8080
 client:
   api_urls:
-    client_search_api: not_set
-    client_status_api: not_set
+    client_search_api: http://{host}:{port}/private/api/v1/registry/on-search
+    client_status_api: http://{host}:{port}/private/api/v1/registry/on-status
 
+# Below are Keycloak configuration.
 keycloak:
+  # These configurations are given by dc that is the reason name is from_dc. 
   from_dc:
-    url: not_set
-    clientId: not_set
-    clientSecret: not_set
+    # url is for creating token , add domain name e.g. - http://127.0.0.1:8081/ , it means 8081 is port on which keycloak is running. 
+    url: "https://{domain of dc instance}/auth/realms/data-consumer/protocol/openid-connect/token"
+    clientId: {client name given to client created in dc instance}
+    clientSecret: {client secret of client from dc keycloak instance. Refer 8.7 for same}
   dp:
-    url: not_set
-    username: not_set
-    password: not_set
+    # These are dp keycloak instance url , admin name and password which is given while creating instance.
+    url: https://{domain of dp instance}/auth
+    username: {username of dp instance}
+    password: {password of dp instance}
     master:
-      url: not_set
-      getClientUrl: not_set
-      clientId: not_set
-      clientSecret: not_set
+      # master token url for particular dp keycloak, add domain name http://127.0.0.1:8081/ 
+      url: https://{domain}/auth/realms/master/protocol/openid-connect/token
+      getClientUrl: https://{domain}/auth/admin/realms/{client id of dp}/clients
+      clientId: {client name given to admin client created in dp instance}
+      clientSecret: {client secret of admin client from dp keycloak instance. Refer 8.7 for same}
     client:
-      url: not_set
-      realm: not_set
-      clientId: not_set
-      clientSecret: not_set
-      realmClientId: not_set
-      realmClientSecret: not_set
+      # dp client token url. Add domain name and realm-id
+      url: https://{domain}/auth/realms/{realm-id}/protocol/openid-connect/token
+      realm: {realm id}
+      clientId: {dp client id}
+      clientSecret: {client secret of client from dp keycloak instance. Refer 8.7 for same}
 
+# Below configuration is for cryptography setting.
 crypto:
+  # to_dc means these configurations used for on-search communication.
   to_dc:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
+    # flag of encryption (use only small case)    
+    support_encryption: true
+    # flag of signature (use only small case)
+    support_signature: true
+    password: {password of on-search .p12 file}
+    key_path: {keypath of on-search .p12 file}
+    id: {dp id which will be common between dc and dp}
   from_dc:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
+    # flag of encryption (use only small case)    
+    support_encryption: true
+    # flag of signature (use only small case)
+    support_signature: true
+    password: {password of search .p12 file which will be given from dc}
+    key_path: {keypath of search .p12 file which will be given from dc}
 
 dashboard:
-  dp_dashboard_url: not_set
-````
-14. Add below attributes as per your requirement -  
-    1. Change db name (gtwop) , schema name (farmer) , username and password for db connection as per your postgres/mysql connection. 
-    2. client.api_urls.client_search_api -> change port as  respective on-search api. 
-    3. client.api_urls.client_status_api -> change port as  respective on-status api.
-    3. keycloak.from-dc.url -> create realm for data consumer and replace name with keycloak data-consumer realm name. 
-    4. keycloak.from-dc.client-id -> respective client id of created realm. 
-    5. keycloak.from-dc.client.secret -> respective client secret of created realm.
-    6. keycloak.dp.url -> keycloak dp url
-    7. keycloak.dp.username -> dp keycloak admin username 
-    8. keycloak.dp.password -> dp keycloak admin password
-    9. keycloak.dp.master.url -> master token url for particular dp keycloak , change host name in case of change 
-    10. keycloak.dp.master.getClientUrl -> client details api , replace host and realm name in case. 
-    11. keycloak.dp.master.clientId -> client id of admin client of master realm
-    12. keycloak.dp.master.clientSecret -> client secret of admin client of master realm
-    13. keycloak.dp.client.url -> realm token url , replace realm id
-    14. keycloak.dp.realm -> realm name of dp
-    15. keycloak.dp.clientId -> client Id of client created in dp realm
-    16. keycloak.dp.clientSecret -> client secret of client created in dp realm
-    17. crypto.to_dc.support_encryption -> flag of encryption when scheduler will call /on-search api
-    17. crypto.to_dc.support_signature -> flag of signature when scheduler will call /on-search api
-    18. crypto.to_dc.password -> password of on_search.p12 password
-    19. crypto.to_dc.key.path -> path of on_search.p12 file
-    20. crypto.to_dc.id -> flag of Farmer id for data consumer.
-    21. crypto.from_dc.support_encryption ->flag of encryption when the data consumer will call /search to validate the configuration.
-    22. crypto.from_dc.support_signature ->  flag of signature when the data consumer will call /search to validate the configuration.
-    23. crypto.from_dc.password -> password of search.p12 password
-    24. crypto.from_dc.key.path -> path of search.p12 file
-    25. Dashboard.dp_dashboard_url ->
+  dp_dashboard_url: "http://{domain}:{port}/d-solo/e62ae08b-a6e1-4095-af79-c36f02b8fae2/dp1-dashboard?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
 
-    
-16. Define below endpoint in RegistryController.
+# sftp connection configurations. 
+sftp:
+  listener:
+    # hostname of sftp connection of dp e.g. localhost 
+    host: {host name}
+    port: {port of sftp connection}
+    user: {username of sftp connection}
+    password: {password of sftp connection}
+    remote:
+      # path of sftp client for inbound e.g. /inbound 
+      inbound_directory: {path mentioned in sftp client for inbound}
+      outbound_directory: {path mentioned in sftp client for outbound}
+    local:
+      inbound_directory: {path created in local machine for inbound}
+      outbound_directory: {path created in local machine for inbound}
+
+  dc:
+    # hostname of sftp connection of dc e.g. localhost 
+    host: {host name}
+    port: {port of sftp connection}
+    user: {username of sftp connection}
+    password: {password of sftp connection}
+    remote:
+      outbound_directory: {path mentioned in sftp client for outbound}
+```` 
+20. Define below endpoint in RegistryController.
 ````
 @Operation(summary = "Receive search request")
 @ApiResponses(value = {
@@ -485,12 +526,10 @@ dashboard:
        @ApiResponse(responseCode = "403", description = Constants.INVALID_RESPONSE),
        @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
 @PostMapping("/private/api/v1/registry/search")
-public AcknowledgementDTO registerCandidateInformation(@RequestBody String requestString) throws Exception {
+public AcknowledgementDTO handleRequest(@RequestBody String requestString) throws Exception {
 
 ````
-
-
-18. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO.
+21. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO.
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(RequestHeaderDTO.class,
@@ -501,19 +540,19 @@ RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
        readValue(requestString);
 RequestMessageDTO messageDTO = null;
 ````
-19. Add below code snippet to validate signature and encryption.
+22. Add below code snippet to validate signature and encryption.
 ````
 Map <String , Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
 messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
 requestDTO.setMessage(messageDTO);
 ````
-20. Add below code snippet to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
+23. Add below code snippet to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
 ````
 String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
 try {
    farmerValidationService.validateRequestDTO(requestDTO);
-   return requestHandlerService.buildCacheRequest(
-           objectMapper.writeValueAsString(requestDTO), cacheKey);
+            return requestHandlerService.buildCacheRequest(
+                    objectMapper.writeValueAsString(requestDTO), cacheKey, CoreConstants.SEND_PROTOCOL_HTTPS);
 } catch (G2pcValidationException e) {
    throw new G2pcValidationException(e.getG2PcErrorList());
 }
@@ -525,7 +564,7 @@ catch (Exception e){
 }
 
 ````
-21. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
+24. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
 ````
 @ExceptionHandler(value
        = G2pcValidationException.class)
@@ -546,16 +585,114 @@ public ErrorResponse handleG2pHttpStatusException(
    }
 
 ````
-22. Create below endpoint for clearing the db.
+25. Create below endpoint for clearing the db.
 ````
   @GetMapping("/public/api/v1/registry/clear-db")
     public void clearDb() throws G2pHttpException, IOException {
-        //dpCommonUtils.handleToken();
         msgTrackerRepository.deleteAll();
         log.info("DP-1 DB cleared");
     }
 ````
-22. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
+26. Create below class DcSftpListener for handing sftp request.
+````
+package g2pc.ref.farmer.regsvc.controller.sftp;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.constants.CoreConstants;
+import g2pc.core.lib.dto.common.header.HeaderDTO;
+import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
+import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
+import g2pc.core.lib.dto.search.message.request.RequestDTO;
+import g2pc.core.lib.dto.search.message.request.RequestMessageDTO;
+import g2pc.core.lib.exceptions.G2pcValidationException;
+import g2pc.dp.core.lib.service.RequestHandlerService;
+import g2pc.ref.farmer.regsvc.constants.Constants;
+import g2pc.ref.farmer.regsvc.service.FarmerValidationService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.messaging.Message;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+@Configuration
+@Slf4j
+public class DcSftpListener {
+
+    @Value("${sftp.listener.local.inbound_directory}")
+    private String sftpLocalDirectoryInbound;
+
+    @Value("${sftp.listener.local.outbound_directory}")
+    private String sftpLocalDirectoryOutbound;
+
+    @Autowired
+    private RequestHandlerService requestHandlerService;
+
+    @Autowired
+    FarmerValidationService farmerValidationService;
+
+    @SuppressWarnings("unchecked")
+    @ServiceActivator(inputChannel = "sftpInbound")
+    public void handleMessageInbound(Message<File> message) {
+        try {
+            File file = message.getPayload();
+            log.info("Received Message from inbound directory: {}", file.getName());
+            String requestString = new String(Files.readAllBytes(file.toPath()));
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                    ResponseHeaderDTO.class, HeaderDTO.class);
+
+            RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
+                    readValue(requestString);
+            RequestMessageDTO messageDTO;
+
+            Map<String, Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
+
+            messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
+            requestDTO.setMessage(messageDTO);
+            String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
+            try {
+                farmerValidationService.validateRequestDTO(requestDTO);
+                requestHandlerService.buildCacheRequest(
+                        objectMapper.writeValueAsString(requestDTO), cacheKey, CoreConstants.SEND_PROTOCOL_SFTP);
+            } catch (G2pcValidationException e) {
+                throw new G2pcValidationException(e.getG2PcErrorList());
+            } catch (JsonProcessingException e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            }
+            Files.deleteIfExists(Path.of(sftpLocalDirectoryInbound + "/" + file.getName()));
+        } catch (Exception e) {
+            log.error("Error: ", e);
+        }
+    }
+
+    @ServiceActivator(inputChannel = "sftpOutbound")
+    public void handleMessageOutbound(Message<File> message) throws IOException {
+        File file = message.getPayload();
+        log.info("Received Message from outbound directory: {}", file.getName());
+        Files.deleteIfExists(Path.of(sftpLocalDirectoryOutbound + "/" + file.getName()));
+    }
+
+    @ServiceActivator(inputChannel = "errorChannel")
+    public void handleError(Message<?> message) {
+        Throwable error = (Throwable) message.getPayload();
+        log.error("Handling ERROR: {}", error.getMessage());
+    }
+}
+
+````
+27. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
 ````
 @Getter
 @Setter
@@ -585,7 +722,7 @@ public class QueryParamsFarmerDTO {
 }
 
 ````
-23. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
+27. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
 ````
 @Getter
 @Setter
@@ -625,7 +762,7 @@ public class RegRecordFarmerDTO {
 }
 
 ````
-24. To get data provider information create a data-provider info table in db , entity and repository as shown below.
+28. To get data provider information create a data-provider info table in db , entity and repository as shown below.
 ````
 @Builder
 @Data
@@ -659,12 +796,12 @@ public interface FarmerInfoRepository extends JpaRepository<FarmerInfoEntity, Lo
    Optional<FarmerInfoEntity> findBySeasonAndFarmerId(String season, String farmerId);
 }
 ````
-25. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
+29. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
 ````
 @Override
 public RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO) throws Exception {
 ````
-26. Define below autowired beans and configurations in ValidationServiceImpl.
+30. Define below autowired beans and configurations in ValidationServiceImpl.
 ````
 @Autowired
     RequestHandlerService requestHandlerService;
@@ -690,7 +827,13 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
     @Value("${crypto.from_dc.key.path}")
     private String farmer_key_path;
 ````
-27. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
+31. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
+    1. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
+    2. Take farmerKeyPath for dp .p12 file.
+    3. Check isEncrypt flag , if true check isMsgEncrypt flag from header is true or false , if not true throw error that configurations are not valid.
+    4. Recreate signature using header and message. Verify both signature if error from verifySignature throw error signature invalid.
+    5. Decrypt message , if successfully decrypted add in requestDto.
+    6. Above logic is same in 4 cases of signature and encryption mentioned "Overview / List of libraries". 
 ````
        ObjectMapper objectMapper = new ObjectMapper();
         RequestMessageDTO messageDTO;
@@ -852,7 +995,7 @@ requestHandlerService.validateRequestMessage(messageDTO);
     @Value("${crypto.to_dc.key.path}")
     private String farmer_key_path;
 ````
-32. Define below method in Scheduler.
+Define below method in Scheduler.
 ````
 @Scheduled(cron = "0 */1 * ? * *")// runs every 1 min.
 @Transactional
@@ -1014,8 +1157,8 @@ dpCommonUtils.handleToken();
         String cacheKey = Constants.STATUS_CACHE_KEY_STRING + statusRequestMessageDTO.getTransactionId();
         try {
             farmerValidationService.validateStatusRequestDTO(statusRequestDTO);
-            return requestHandlerService.buildCacheStatusRequest(
-                    objectMapper.writeValueAsString(statusRequestDTO), cacheKey);
+           return requestHandlerService.buildCacheStatusRequest(
+                    objectMapper.writeValueAsString(statusRequestDTO), cacheKey,CoreConstants.SEND_PROTOCOL_HTTPS);
         }
         catch (G2pcValidationException e) {
             throw new G2pcValidationException(e.getG2PcErrorList());
@@ -1193,8 +1336,24 @@ for (String cacheKey: statusCacheKeysList) {
     }
 }
 ```` 
+49. Create DpDashboardController for creating dashboard endpoints for Grafana.
+````
+@Controller
+public class DpDashboardController {
 
-# Data Consumer (DC) Implementation
+    @Value("${dashboard.dp_dashboard_url}")
+    private String dpDashboardUrl;
+
+    @GetMapping("/dashboard")
+    public String showDashboardPage(Model model) {
+        model.addAttribute("dp_dashboard_url", dpDashboardUrl);
+        return "dashboard";
+    }
+}
+````
+50. 
+
+# 6. Data Consumer (DC) Implementation
 - In DC implementation , as explained in Overview of libraries , dependency of G2pc-dc-core-lib needs to be added.
 - Data consumers are  going to act as consumers as well as providers.
 Implementation explained in below point when it act like data consumer -
@@ -1202,7 +1361,7 @@ Implementation explained in below point when it act like data consumer -
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/patload_postman.png)
   2. Using this data consumer will decide which data provider’s endpoint it needs to call and which request it needs to build.
   3. Once a request is created /search endpoint it will call and once positive acknowledgement is there it will save pending status in cache for particular transaction id. Refer below for more understanding.
-  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/payload_sequence_diagram.png)
+  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dc-seq-diagram-2.png)
 - Implementation explained in below point when it act like data provider -
   1. As shown in Figure 2 data provider needs to implement the end point and also make calls to the endpoint of the data provider. 
   2. At first Data consumer service needs to write the /on-search end-point. 
@@ -1212,15 +1371,15 @@ Implementation explained in below point when it act like data consumer -
   6. This responseString will get validated as per g2p specification. Please refer to the link mentioned and image below.
   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/on_search_spec.png)
   7. Once responseString gets validated data consumers should update that data in redis cache and send acknowledgement back to the data consumer. Refer below for more understanding.
-  ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/on_search_seqeunce_dia.png)
+  ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/dc-on-search-sequence-dia.png)
 
-# How to create a Data Consumer ? 
+# 7. How to create a Data Consumer ? 
 1. Create a spring boot application with the latest spring-boot version , maven and Java 17. And Click on generate to download.
   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/spring_boot_dc_creation.png)
 2. Extract the downloaded jar and open it in IDE. 
 3. Add below dependencies in <dependencies> tag in pom.xml
 ````
-   <dependency>
+      <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
@@ -1262,11 +1421,6 @@ Implementation explained in below point when it act like data consumer -
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>
             <version>1.0.82</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>jakarta.validation</groupId>
@@ -1324,9 +1478,10 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: not_set
-    username: not_set
-    password: not_set
+    # Add db name, schema name, username and password for db connection as per your postgres/mysql connection.
+    url: jdbc:postgresql://{Domain-id}}:{port}/{Database name}?currentSchema={Schema name}
+    username: {username of database connection}
+    password: {password of database connection}
 
     hikari:
       data-source-properties:
@@ -1362,115 +1517,99 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: 8000
+  port: {add port as per requirement}
   error:
     include-message: always
 
+# This is redis connection configuration
 spring.data.redis:
   repositories.enabled: false
-  host: localhost
-  password: 123456789
-  port: 6379
+  host: {host domain of redis connection}
+  password: {password of redis port}
+  port: {port of redis connection}
 
 keycloak:
+  # These configurations are given by dc that is the reason name is from_dp. 
   from_dp:
-    farmer:
-      url: not_set
-      clientId: not_set
-      clientSecret: not_set
-    mobile:
-      url: not_set
-      clientId: not_set
-      clientSecret: not_set
+    # this will be many dp , add url , clientid and client secret for every dp.
+    {dp-name}:
+      url: "https://{domain of dc instance}/auth/realms/{realm name of dp}/protocol/openid-connect/token"
+      clientId: {client id of dp given by dp}
+      clientSecret: {client secret of dp client}
   dc:
-    url: not_set
-    username: not_set
-    password: not_set
+    url: https://{domain of dc instance}/auth
+    username: {username of dc instance}
+    password: {password of dc instance}
     master:
-      url: not_set
-      getClientUrl: not_set
-      clientId: not_set
-      clientSecret: not_set
+      # master token url for particular dc keycloak, add domain name http://127.0.0.1:8081/ 
+      url: https://{domain}/auth/realms/master/protocol/openid-connect/token
+      getClientUrl: https://{domain}/auth/admin/realms/{client id of dp}/clients
+      clientId: {client name given to admin client created in dc instance}
+      clientSecret: {client secret of admin client from dc keycloak instance. Refer 8.7 for same}
     client:
-      url: not_set
-      realm: not_set
-      clientId: not_set
-      clientSecret: not_set
+      # dc client token url. Add domain name and realm-id
+      url: https://{domain}/auth/realms/{realm-id}/protocol/openid-connect/token
+      realm: {realm id}
+      clientId: {dc client id}
+      clientSecret: {client secret of client from dc keycloak instance. Refer 8.7 for same}
 
 crypto:
-  to_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-  to_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-  from_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
-  from_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
+  to_dp_{dp_name}:
+    # flag of encryption (use only small case)    
+    support_encryption: true
+    # flag of signature (use only small case)
+    support_signature: true
+    password: {password of search .p12 file of particuler dp}
+    key_path: {keypath of search .p12 file of particuler dp}
+  from_dp_{dp_name}:
+    # flag of encryption (use only small case)    
+    support_encryption: true
+    # flag of signature (use only small case)
+    support_signature: true
+    password: {password of on-search .p12 file}
+    key_path: {keypath of on-search .p12 file}
+    id: {dp id which will be common between dc and dp}
 
 registry:
   api_urls:
-    farmer_search_api: not_set
-    mobile_search_api: not_set
-    farmer_status_api: not_set
-    mobile_status_api: not_set
+    {dp-name}_search_api: "http://{host}:{port}/private/api/v1/registry/search"
+    {dp-name}_status_api: "http://{host}:{port}/private/api/v1/registry/txn/status"
 
 dashboard:
-  left_panel_url: not_set
-  right_panel_url: not_set
-  bottom_panel_url: not_set
-  post_endpoint_url: not_set
-  clear_dc_db_endpoint_url: not_set
-  clear_dp1_db_endpoint_url: not_set
-  clear_dp2_db_endpoint_url: not_set
-```` 
+  left_panel_url: "https://{domain of dc}/grafana/d-solo/cb26f39f-97f3-43ea-9f42-68d49d9822a3/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  right_panel_url: "https://{domain of dc}/grafana/d-solo/d9f9c625-934b-4a65-995f-c742daad6387/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  bottom_panel_url: "https://{domain of dc}/grafana/d-solo/a25a6c65-fda7-4fdd-80a7-80442aed17e8/bottom-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  post_endpoint_url: "http://localhost:8000/public/api/v1/consumer/search/csv"
+  clear_dc_db_endpoint_url: "http://{host}:{port of dc}/private/api/v1/registry/clear-db"
+  clear_dp1_db_endpoint_url: "http://{host}:{port of dp1}/private/api/v1/registry/clear-db"
 
-7. Add below attributes as per your requirement -
-   1. Change db name (gtwop) , schema name (farmer) , username and password for db connection as per your postgres/mysql connection. 
-   2. spring.data.redis.host -> add redis host 
-   3. spring.data.redis.password -> password of dp redis port
-   4. spring.data.redis.port -> port assigned for redis of particular dp
-   5. keycloak.from_dp.{dp-name}.url -> url of token creation of particular dp , replace realm name with respective dp.
-   6. keycloak.from_dp.{dp-name}.clientId -> client id of particular dp client , check in below image.
-   7. keycloak.from_dp.{dp-name}.clientSecret -> client secret of particular dp client , check in below image.
-   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-dp-client-secret.png)
-   8. keycloak.dc.url -> hosting url of dc 
-   9. keycloak.dc.username -> authentication username of hosting url of dc
-   10. keycloak.dc.password -> authentication password of hosting url of dc
-   11. keycloak.dc.master.url -> token endpoint url of master realm of data-consumer.
-   12. keycloak.dc.master.getClientUrl -> get client by realm id endpoint of particular dc. replace host and realm id for particular data consumer
-   13. keycloak.dc.master.clientId -> admin cli client id of master realm of dc
-   14. keycloak.dc.master.clientSecret -> admin cli client secret of master realm of dc
-   15. keycloak.dc.client.url -> token endpoint url of data-consumer realm of data-consumer.
-   16. keycloak.dc.client.realm -> dc realm name
-   17. keycloak.dc.client.clientId -> dc client id 
-   18. keycloak.dc.client.clientSecret -> dc client secret 
-   ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-dc-client.png)
-   19. crypto.to_dp_{dp-name}.support_encryption -> encryption flag of particular dp of search endpoint
-   20. crypto.to_dp_{dp-name}.support_signature -> signature flag of particular dp of search endpoint
-   21. crypto.to_dp_{dp-name}.password -> password of .p12 file particular dp of search endpoint
-   22. crypto.to_dp_{dp-name}.key_path -> key path of .p12 file particular dp of search endpoint
-   23. crypto.from_dp_{dp-name}.support_encryption -> encryption flag of particular dp of on-search endpoint 
-   24. crypto.from_dp_{dp-name}.support_signature -> signature flag of particular dp of on-search endpoint 
-   25. crypto.from_dp_{dp-name}.password -> password of .p12 file particular dp of on-search endpoint 
-   26. crypto.from_dp_{dp-name}.key_path -> key path of .p12 file particular dp of on-search endpoint
-   27. crypto.from_dp_{dp-name}.id -> id flag for dp
-   28. registry.api_urls.{dp-name}_search_api -> search end point of dp
-   29. dashboard.clear_dc_db_endpoint_url -> clear db endpoint of dc
-   30. dashboard.clear_dp_db_endpoint_url -> clear db endpoints of multiple dps
+# sftp connection configurations. 
+sftp:
+  listener:
+    # hostname of sftp connection of dp e.g. localhost 
+    host: {host name}
+    port: {port of sftp connection of dc }
+    user: {username of sftp connection of dc }
+    password: {password of sftp connection of dc }
+    remote:
+      # path of sftp client for inbound e.g. /inbound 
+      inbound_directory: {path mentioned in sftp client for inbound}
+      outbound_directory: {path mentioned in sftp client for outbound}
+    local:
+      inbound_directory: {path created in local machine for inbound}
+      outbound_directory: {path created in local machine for inbound}
+  
+  # add dp as per requirement and add all these fields
+  dp1:
+    # hostname of sftp connection of dp e.g. localhost 
+    host: {host name}
+    port: {port of sftp connection of dp }
+    user: {username of sftp connection of dp }
+    password: {password of sftp connection of dp }
+    remote:
+      # path of sftp client for inbound e.g. /inbound 
+      inbound_directory: {path mentioned in sftp client for inbound}
+````
 8. Add RegistryConfig.java class in config package 
 ````
 @Service
@@ -1579,15 +1718,13 @@ public class DcController {}
     @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/public/api/v1/consumer/search/payload")
     public AcknowledgementDTO createSearchRequestsFromPayload(@RequestBody Map<String, Object> payloadMap) throws Exception {
-````
-14. Add below code snippet to request from payload
-````
     log.info("Payload received from postman");
     AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
     if (ObjectUtils.isNotEmpty(payloadMap)) {
     acknowledgementDTO = dcRequestBuilderService.generateRequest(Collections.singletonList(payloadMap));
     }
     return acknowledgementDTO;
+    }
 ````
 15. To run above entrypoint refer below curl.
 ````
@@ -1615,7 +1752,12 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
         log.info("Payload received from csv file");
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         if (ObjectUtils.isNotEmpty(payloadFile)) {
-            acknowledgementDTO = dcRequestBuilderService.generatePayloadFromCsv(payloadFile);
+            Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), "payload.csv");
+            Files.createFile(tempFile);
+            payloadFile.transferTo(tempFile.toFile());
+            acknowledgementDTO = dcRequestBuilderService.generateRequest(
+                    requestBuilderService.generatePayloadFromCsv(tempFile.toFile()), CoreConstants.SEND_PROTOCOL_HTTPS);
+            Files.delete(tempFile);
         }
         return acknowledgementDTO;
     }
@@ -1625,7 +1767,34 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
 ````
-18. Add below exception handling in the DC controller.
+18. Create below endpoint for clearing db in dc.
+````
+ @GetMapping("/public/api/v1/registry/clear-db")
+    public void clearDb() throws G2pHttpException, IOException {
+        commonUtils.handleToken();
+        responseDataRepository.deleteAll();
+        log.info("DC DB cleared");
+
+        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+            try {
+                Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(configEntryMap.getKey());
+                String jwtToken = requestBuilderService.getValidatedToken(registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString());
+                log.info("jwtToken: {}", jwtToken);
+                log.info("url: {}", registrySpecificConfigMap.get(CoreConstants.DP_CLEAR_DB_URL).toString());
+                HttpResponse<String> response = g2pUnirestHelper.g2pGet(registrySpecificConfigMap.get(CoreConstants.DP_CLEAR_DB_URL).toString())
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", jwtToken)
+                        .asString();
+                log.info("DP " + registrySpecificConfigMap.get(CoreConstants.REG_TYPE) + " DB cleared with response " + response.getStatus());
+            } catch (Exception e) {
+                log.error("Exception in clearDb: ", e);
+            }
+        }
+    }
+````
+19. Add below exception handling in the DC controller.
 ````
 @ExceptionHandler(value = G2pcValidationException.class)
 @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -1676,9 +1845,9 @@ public class RegRecordFarmerDTO {
 ````
 public interface DcRequestBuilderService {
 
-    AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList) throws Exception;
+    AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList, String protocol) throws Exception;
 
-    AcknowledgementDTO generatePayloadFromCsv(MultipartFile payloadFile) throws Exception;
+    AcknowledgementDTO generateStatusRequest(String transactionID, String transactionType,String protocol) throws Exception;
 }
 ````
 21. Create DcRequestBuilderServiceImpl.java class and implement it from DcRequestBuilderService interface.
@@ -1702,12 +1871,29 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     private ResourceLoader resourceLoader;
 ````
 23. Override below method generateRequest() from interface.
+    1. Fetch queryMapList using payload list provided and registryconfig.
+    2. In for loop iterate configEntryMap fetching from registryConfig.
+    3. Filter out queryMapFilteredList using registryType.
+    4. Build searchCriteriaDto by calling dc-core method by passing queryParams and registrySpecificationConfig.
+    5. Generate transaction id.
+    6. Build searchString using method buildRequest from dc-core.
+    7. Check if request is http or sftp.
+    8. In http call sendRequest method by passing all arguments.
+    9. Put returned g2pcError in g2pcErrorMap.
+    10. If request is sftp , create SftpServerConfigDTO.
+    11. Invoke sendRequestSftp method and put returned g2pcError in g2pcErrorMap.
+    12. Save initial transaction and requestString in redis.
+    13. Save data in db.
 ````
- public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
+  @SuppressWarnings("unchecked")
+    @Override
+    public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList, String protocol) throws Exception {
         Map<String, G2pcError> g2pcErrorMap = new HashMap<>();
 
         List<Map<String, Object>> queryMapList = requestBuilderService.createQueryMap(payloadMapList, registryConfig.getQueryParamsConfig().entrySet());
+
         for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+
             List<Map<String, Object>> queryMapFilteredList = queryMapList.stream()
                     .map(map -> map.entrySet().stream()
                             .filter(entry -> entry.getKey().equals(configEntryMap.getKey()))
@@ -1720,29 +1906,53 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
                 searchCriteriaDTOList.add(searchCriteriaDTO);
             }
             String transactionId = CommonUtils.generateUniqueId("T");
-            String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId);
+            String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId, ActionsENUM.SEARCH);
             try {
-                Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
-                String encryptedSalt = "";
-                InputStream fis = resource.getInputStream();
-                G2pcError g2pcError = requestBuilderService.sendRequest(requestString,
-                        registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
-                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
-                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
-                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
-                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
-                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
-                        fis, encryptedSalt,
-                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(),CoreConstants.DP_SEARCH_URL);
-                g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
-                log.info("DP_SEARCH_URL = {}", registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
+                if (protocol.equals(CoreConstants.SEND_PROTOCOL_HTTPS)) {
+                    Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+                    String encryptedSalt = "";
+                    InputStream fis = resource.getInputStream();
+                    G2pcError g2pcError = requestBuilderService.sendRequest(requestString,
+                            registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                            fis, encryptedSalt,
+                            registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), CoreConstants.SEARCH_TXN_TYPE);
+                    g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
+                    log.info("DP_SEARCH_URL = {}", registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
+                } else if (protocol.equals(CoreConstants.SEND_PROTOCOL_SFTP)) {
+                    SftpServerConfigDTO sftpServerConfigDTO = new SftpServerConfigDTO();
+                    sftpServerConfigDTO.setUser(registrySpecificConfigMap.get(SftpConstants.SFTP_USER).toString());
+                    sftpServerConfigDTO.setHost(registrySpecificConfigMap.get(SftpConstants.SFTP_HOST).toString());
+                    sftpServerConfigDTO.setPort(Integer.parseInt(registrySpecificConfigMap.get(SftpConstants.SFTP_PORT).toString()));
+                    sftpServerConfigDTO.setPassword(registrySpecificConfigMap.get(SftpConstants.SFTP_PASSWORD).toString());
+                    sftpServerConfigDTO.setStrictHostKeyChecking(registrySpecificConfigMap.get(SftpConstants.SFTP_SESSION_CONFIG).toString());
+                    sftpServerConfigDTO.setRemoteInboundDirectory(registrySpecificConfigMap.get(SftpConstants.SFTP_REMOTE_INBOUND_DIRECTORY).toString());
 
-                txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
+                    Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+                    String encryptedSalt = "";
+                    InputStream fis = resource.getInputStream();
+                    G2pcError g2pcError = requestBuilderService.sendRequestSftp(requestString,
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                            fis, encryptedSalt,
+                            registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), CoreConstants.SEARCH_TXN_TYPE,
+                            sftpServerConfigDTO);
+                    log.info("g2pcError = {}", g2pcError);
+                    g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
+
+                    log.info("Uploaded to inbound of : {}", registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                }
+                txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue(),protocol);
                 txnTrackerService.saveRequestTransaction(requestString,
-                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
-                txnTrackerService.saveRequestInDB(requestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId,protocol);
+                txnTrackerService.saveRequestInDB(requestString,
+                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), protocol);
             } catch (Exception e) {
-                log.error("Exception in generateRequest : ", e);
+                log.error(Constants.GENERATE_REQUEST_ERROR_MESSAGE, e);
             }
         }
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
@@ -1751,41 +1961,114 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
         return acknowledgementDTO;
     }
 ````
-24. To generate request from csv file overwrite below method and one private method to iterate csv file. Used to convert csv multipart file to list of maps
+24. Create DcSftpListener.java to handle inbound and outbound messages in package g2pc.ref.dc.client.controller.sftp
+    1. Values added in this class are inbound and outbound file path mentioned in application.yml.
+    2. handleMessageInbound() method written to handle inbound message.
 ````
-  @Override
-    public AcknowledgementDTO generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
-        Reader reader = new BufferedReader(new InputStreamReader(payloadFile.getInputStream()));
-        CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
-        List<Map<String, Object>> payloadMapList = getPayloadMapList(csvParser);
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
-        if (ObjectUtils.isNotEmpty(payloadMapList)) {
-            acknowledgementDTO = generateRequest(payloadMapList);
-        }
-        return acknowledgementDTO;
-    }
-````
-Below method will convert csv file to list of map 
-* map -> key = column title/header , value = each row value
-````
-    private static List<Map<String, Object>> getPayloadMapList(CSVParser csvParser) {
-        List<CSVRecord> csvRecordList = csvParser.getRecords();
-        CSVRecord headerRecord = csvRecordList.get(0);
-        List<String> headerList = new ArrayList<>();
-        for (int i = 0; i < headerRecord.size(); i++) {
-            headerList.add(headerRecord.get(i));
-        }
-        List<Map<String, Object>> payloadMapList = new ArrayList<>();
-        for (int i = 1; i < csvRecordList.size(); i++) {
-            CSVRecord csvRecord = csvRecordList.get(i);
-            Map<String, Object> payloadMap = new HashMap<>();
-            for (int j = 0; j < headerRecord.size(); j++) {
-                payloadMap.put(headerList.get(j), csvRecord.get(j));
+package g2pc.ref.dc.client.controller.sftp;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import g2pc.core.lib.constants.CoreConstants;
+import g2pc.core.lib.dto.common.AcknowledgementDTO;
+import g2pc.core.lib.dto.common.header.HeaderDTO;
+import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
+import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
+import g2pc.core.lib.dto.search.message.request.ResponseMessageDTO;
+import g2pc.core.lib.dto.search.message.response.ResponseDTO;
+import g2pc.dc.core.lib.service.RequestBuilderService;
+import g2pc.ref.dc.client.service.DcRequestBuilderService;
+import g2pc.ref.dc.client.service.DcResponseHandlerService;
+import g2pc.ref.dc.client.service.DcValidationService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.messaging.Message;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+@Configuration
+@Slf4j
+public class DcSftpListener {
+
+    @Value("${sftp.listener.local.inbound_directory}")
+    private String sftpLocalDirectoryInbound;
+
+    @Value("${sftp.listener.local.outbound_directory}")
+    private String sftpLocalDirectoryOutbound;
+
+    @Autowired
+    private DcRequestBuilderService dcRequestBuilderService;
+
+    @Autowired
+    private RequestBuilderService requestBuilderService;
+
+    @Autowired
+    private DcResponseHandlerService dcResponseHandlerService;
+
+    @Autowired
+    DcValidationService dcValidationService;
+
+    @ServiceActivator(inputChannel = "sftpInbound")
+    public void handleMessageInbound(Message<File> message) {
+        try {
+            File file = message.getPayload();
+            log.info("Received Message from inbound directory: {}", file.getName());
+            if (ObjectUtils.isNotEmpty(file)) {
+                AcknowledgementDTO acknowledgementDTO = dcRequestBuilderService.generateRequest(
+                        requestBuilderService.generatePayloadFromCsv(file), CoreConstants.SEND_PROTOCOL_SFTP);
+                log.info("AcknowledgementDTO: {}", acknowledgementDTO);
             }
-            payloadMapList.add(payloadMap);
+            Files.deleteIfExists(Path.of(sftpLocalDirectoryInbound + "/" + file.getName()));
+        } catch (Exception e) {
+            log.error("Error: ", e);
         }
-        return payloadMapList;
     }
+
+    @SuppressWarnings("unchecked")
+    @ServiceActivator(inputChannel = "sftpOutbound")
+    public void handleMessageOutbound(Message<File> message) throws Exception {
+        File file = message.getPayload();
+        log.info("Received Message from outbound directory: {}", file.getName());
+        String responseString = new String(Files.readAllBytes(file.toPath()));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                ResponseHeaderDTO.class, HeaderDTO.class);
+        ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
+                readValue(responseString);
+        ResponseMessageDTO messageDTO;
+        Map<String, Object> metaData = (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
+        messageDTO = dcValidationService.signatureValidation(metaData, responseDTO);
+        responseDTO.setMessage(messageDTO);
+        try {
+            dcValidationService.validateResponseDto(responseDTO);
+            if (ObjectUtils.isNotEmpty(responseDTO)) {
+                dcResponseHandlerService.getResponse(responseDTO);
+            }
+            log.info("on search response handled successfully");
+        } catch (JsonProcessingException | IllegalArgumentException e) {
+            log.info("on search response handled error : ", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+        Files.deleteIfExists(Path.of(sftpLocalDirectoryOutbound + "/" + file.getName()));
+    }
+
+    @ServiceActivator(inputChannel = "errorChannel")
+    public void handleError(Message<?> message) {
+        Throwable error = (Throwable) message.getPayload();
+        log.error("Handling ERROR: {}", error.getMessage());
+    }
+}
+
 ````
 25. Create on-search endpoint , refer below snippet , there are methods called in this methods refer code after this point.
 ````
@@ -1876,7 +2159,7 @@ public class DcCommonUtils {
     
 
 ````
-27. Add below method in DcCommonUtils.java to handle and validate token.
+27. Add below methods in DcCommonUtils.java to handle and validate token and to get sftp configuration for dc.
 ````
     public void handleToken() throws G2pHttpException, JsonProcessingException {
         String token = BearerTokenUtil.getBearerTokenHeader();
@@ -1889,6 +2172,21 @@ public class DcCommonUtils {
             
             throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
         }
+    }
+    
+     public SftpServerConfigDTO getSftpConfigForDc() {
+        SftpServerConfigDTO sftpServerConfigDTO = new SftpServerConfigDTO();
+        sftpServerConfigDTO.setHost(sftpDcHost);
+        sftpServerConfigDTO.setPort(sftpDcPort);
+        sftpServerConfigDTO.setUser(sftpDcUser);
+        sftpServerConfigDTO.setPassword(sftpDcPassword);
+        sftpServerConfigDTO.setAllowUnknownKeys(true);
+        sftpServerConfigDTO.setStrictHostKeyChecking("no");
+        sftpServerConfigDTO.setRemoteInboundDirectory(sftpDcRemoteInboundDirectory);
+        sftpServerConfigDTO.setRemoteOutboundDirectory(sftpDcRemoteOutboundDirectory);
+        sftpServerConfigDTO.setLocalInboundDirectory(sftpDcLocalInboundDirectory);
+        sftpServerConfigDTO.setLocalOutboundDirectory(sftpDcLocalOutboundDirectory);
+        return sftpServerConfigDTO;
     }
 ````
 28. Create DcValidationService interface with 3 methods , validateRegRecords() this method is dc specific , to validate query params.
@@ -1940,6 +2238,14 @@ public class DcValidationServiceImpl implements DcValidationService {
     private String farmerID;
 ````
 31. Override below signatureValidation() method and add required if conditions for required dps.
+    1. Check get string from CoreConstants.DP_ID for respective farmer ids , and add respective attributes.
+    2. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
+    2. Take farmerKeyPath for dp .p12 file.
+    3. Check isEncrypt flag , if true check isMsgEncrypt flag from header is true or false , if not true throw error that configurations are not valid.
+    4. Recreate signature using header and message. Verify both signature if error from verifySignature throw error signature invalid.
+    5. Decrypt message , if successfully decrypted add in requestDto.
+    6. Above logic is same in 4 cases of signature and encryption mentioned "Overview / List of libraries".
+
 ````
   @Override
     public ResponseMessageDTO signatureValidation(Map<String, Object> metaData, ResponseDTO responseDTO) throws Exception {
@@ -2054,7 +2360,7 @@ public class DcValidationServiceImpl implements DcValidationService {
         return messageDTO;
     }
 ````
-32. Override validateResponse() and validateRegRecord() method , in this for another dp validateRegRecord Method will be different as per query params.
+32. Override validateResponse() to validate ResponseDTO
 ````
  @Override
     public void validateResponseDto(ResponseDTO responseDTO) throws Exception {
@@ -2336,7 +2642,7 @@ curl --location \
         return messageDTO;
     }
 ````
-41. Override validateStatusResponseDTO() method in DcValidationServiveImpl.
+41. Override validateStatusResponseDTO() method in DcValidationServiceImpl.
 ````
 @Override
     public void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException {
@@ -2351,8 +2657,124 @@ curl --location \
         responseHandlerService.validateStatusResponseMessage(statusResponseMessageDTO);
     }
 ````
-# Keycloak configuration
-## Steps for DC and DP -
+42. Add below method in DcResponseHandlerService interface.
+````
+AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException;
+
+````
+43. Override above method in DcResponseHandlerServiceImpl class.
+````
+@Override
+    public AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException {
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        txnTrackerService.updateStatusTransactionDbAndCache(statusResponseDTO);
+        log.info("on-status response received from registry : {}", objectMapper.writeValueAsString(statusResponseDTO));
+        acknowledgementDTO.setMessage(Constants.ON_SEARCH_RESPONSE_RECEIVED.toString());
+        acknowledgementDTO.setStatus(Constants.COMPLETED);
+        return acknowledgementDTO;
+    }
+````
+43. Create DcDashboardController.java for creating endpoints for dashboard of Grafana.
+````
+@Controller
+@Slf4j
+public class DcDashboardController { 
+}
+````
+43. Add below configuration values which added in application.yml
+````
+    @Value("${dashboard.left_panel_url}")
+    private String leftPanelUrl;
+
+    @Value("${dashboard.right_panel_url}")
+    private String rightPanelUrl;
+
+    @Value("${dashboard.bottom_panel_url}")
+    private String bottomPanelUrl;
+
+    @Value("${dashboard.post_endpoint_url}")
+    private String postEndpointUrl;
+
+    @Value("${dashboard.clear_dc_db_endpoint_url}")
+    private String clearDcDbEndpointUrl;
+
+    @Value("${keycloak.dc.client.url}")
+    private String dcKeyCloakUrl;
+
+    @Value("${keycloak.dc.client.clientId}")
+    private String dcClientId;
+
+    @Value("${keycloak.dc.client.clientSecret}")
+    private String dcClientSecret;
+
+    @Autowired
+    private RequestBuilderService requestBuilderService;
+````
+44. Create below endpoint method 
+````
+@GetMapping("/dashboard")
+    public String showDashboardPage(Model model) throws IOException, ParseException {
+        String jwtToken = requestBuilderService.getValidatedToken(dcKeyCloakUrl, dcClientId, dcClientSecret);
+
+        model.addAttribute("left_panel_url", leftPanelUrl);
+        model.addAttribute("right_panel_url", rightPanelUrl);
+        model.addAttribute("bottom_panel_url", bottomPanelUrl);
+        model.addAttribute("post_endpoint_url", postEndpointUrl);
+        model.addAttribute("clear_dc_db_endpoint_url", clearDcDbEndpointUrl);
+        model.addAttribute("jwtToken", jwtToken);
+        return "dashboard";
+    }
+````
+
+45. Create method createStatusRequestSftp() for creating endpoint to listen to CSV file payload to handle using SFTP.
+````
+ @Operation(summary = "Listen to CSV file payload to handle using SFTP")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = Constants.SEARCH_REQUEST_RECEIVED),
+            @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
+    @PostMapping(value = "/public/api/v1/consumer/search/sftp/csv")
+    public AcknowledgementDTO createStatusRequestSftp(@RequestParam("file") MultipartFile file) {
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        try {
+            if (!Objects.equals(file.getContentType(), "text/csv")) {
+                acknowledgementDTO.setStatus(HeaderStatusENUM.RJCT.toValue());
+                acknowledgementDTO.setMessage("Invalid file type");
+                return acknowledgementDTO;
+            }
+            String originalFilename = UUID.randomUUID() + ".csv";
+            Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), originalFilename);
+            Files.createFile(tempFile);
+            file.transferTo(tempFile.toFile());
+            SftpServerConfigDTO sftpServerConfigDTO = commonUtils.getSftpServerConfigDTO();
+            Boolean status = sftpHandlerService.uploadFileToSftp(sftpServerConfigDTO, tempFile.toString(),
+                    sftpServerConfigDTO.getRemoteInboundDirectory());
+            Files.delete(tempFile);
+            if (Boolean.FALSE.equals(status)) {
+                acknowledgementDTO.setStatus(HeaderStatusENUM.RJCT.toValue());
+                acknowledgementDTO.setMessage(Constants.UPLOAD_ERROR);
+                return acknowledgementDTO;
+            }
+            acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+            acknowledgementDTO.setMessage("File uploaded successfully");
+        } catch (IOException e) {
+            log.error(Constants.UPLOAD_ERROR, e);
+            acknowledgementDTO.setStatus(HeaderStatusENUM.RJCT.toValue());
+            acknowledgementDTO.setMessage(Constants.UPLOAD_ERROR);
+        }
+        return acknowledgementDTO;
+    }
+````
+47. Import below curl to run the endpoint and add payload.csv
+````
+curl --location 'localhost:8000/public/api/v1/consumer/search/sftp/csv' \
+--form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
+````
+48. 
+
+# 8. Keycloak configuration
+### Steps for DC and DP -
 1. Create data-consumer/data-provider realm. Click on Add realm shown below. 
 ![Alt-text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-realm-creation.png)
 2. Enter appropriate name in small cases.
@@ -2372,6 +2794,51 @@ curl --location \
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-master-admin-cli-client-scope.png)
 10. Add below scopes in scope of admin-cli of master realm.
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/keycloak-master-admin-cli-scope.png)
+
+
+# SFTP configuration - 
+### Below are the steps to configure SFTP - 
+1. Run the below docker-compose.yml using below command.
+````
+sudo docker compose up
+````
+docker-compose.yml 
+````
+version: '3'
+services:
+  dc1_sftp:
+    image: atmoz/sftp
+    container_name: dc1_sftp_server
+    restart: unless-stopped
+    ports:
+        - "2224:22"
+    command: cdpi:1234:::inbound,outbound
+
+  dp1_sftp:
+    image: atmoz/sftp
+    container_name: dp1_sftp_server
+    restart: unless-stopped
+    ports:
+        - "2225:22"
+    command: cdpi:1234:::inbound,outbound
+
+  dp2_sftp:
+    image: atmoz/sftp
+    container_name: dp2_sftp_server
+    restart: unless-stopped
+    ports:
+        - "2226:22"
+    command: cdpi:1234:::inbound,outbound
+````
+2. Install any FTP client viewer. Refer below image. Add sites using below steps - 
+    1. Open client and select tab shown in below image.
+   ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/filezilla.png)
+   2. Create site , select SFTP , add local host and port. Add username and password added in docker-compose file.
+   ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/filezilla-site-create.png)
+   3. Create folder structure shown below.
+   ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/filezila-folder.png)
+   4. 
+3. 
 
 
   
