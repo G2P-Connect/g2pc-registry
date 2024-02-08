@@ -247,7 +247,7 @@ public class FarmerResponseBuilderServiceImpl implements FarmerResponseBuilderSe
 public class FarmerValidationServiceImpl implements FarmerValidationService {
  } 
 ````
-17. Add below autowired dependencies in the RegistryController class.
+12. Add below autowired dependencies in the RegistryController class.
 ````
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -268,7 +268,7 @@ public class FarmerValidationServiceImpl implements FarmerValidationService {
     private DpSftpPushUpdateService dpSftpPushUpdateService;
 
 ````
-18. Add below application.yml and update as per below instructions.
+13. Add below application.yml and update as per below instructions.
 ````
 spring:
   mvc:
@@ -417,7 +417,7 @@ sunbird:
     port: {port mention in docker-compose for elastic search}
     scheme: http
 ```` 
-20. Define below endpoint in RegistryController.
+14. Define below endpoint in RegistryController.
 ````
 @Operation(summary = "Receive search request")
 @ApiResponses(value = {
@@ -429,7 +429,7 @@ sunbird:
 public AcknowledgementDTO handleRequest(@RequestBody String requestString) throws Exception {
 
 ````
-21. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO in handleRequest().
+15. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO in handleRequest().
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(RequestHeaderDTO.class,
@@ -440,13 +440,13 @@ RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
        readValue(requestString);
 RequestMessageDTO messageDTO = null;
 ````
-22. Add below code snippet handleRequest() to validate signature and encryption.
+16. Add below code snippet handleRequest() to validate signature and encryption.
 ````
 Map <String , Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
 messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
 requestDTO.setMessage(messageDTO);
 ````
-23. Add below code snippet in handleRequest() to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
+17. Add below code snippet in handleRequest() to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
 ````
 String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
 try {
@@ -464,7 +464,7 @@ catch (Exception e){
 }
 
 ````
-24. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
+18. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
 ````
 @ExceptionHandler(value
        = G2pcValidationException.class)
@@ -485,7 +485,7 @@ public ErrorResponse handleG2pHttpStatusException(
    }
 
 ````
-25. Create below endpoint for clearing the db.
+19. Create below endpoint for clearing the db.
 ````
   @GetMapping("/public/api/v1/registry/clear-db")
     public void clearDb() throws G2pHttpException, IOException {
@@ -499,7 +499,7 @@ public ErrorResponse handleG2pHttpStatusException(
         log.info("DP-1 Redis cache cleared");
     }
 ````
-26. Create below class DcSftpListener for handing sftp request.
+20. Create below class DcSftpListener for handing sftp request.
 ````
 package g2pc.ref.farmer.regsvc.controller.sftp;
 
@@ -596,7 +596,7 @@ public class DcSftpListener {
     }
 }
 ````
-27. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
+21. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
 ````
 @Getter
 @Setter
@@ -626,7 +626,7 @@ public class QueryParamsFarmerDTO {
 }
 
 ````
-27. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
+22. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
 ````
 @Getter
 @Setter
@@ -666,7 +666,7 @@ public class RegRecordFarmerDTO {
 }
 
 ````
-28. To get data provider information create a data-provider info table in db , entity and repository as shown below.
+23. To get data provider information create a data-provider info table in db , entity and repository as shown below.
 ````
 @Builder
 @Data
@@ -693,19 +693,19 @@ public class FarmerInfoEntity {
    private Double paymentAmount;
 
 ````
-Write your respective method using data jpa concept.
+24. Write your respective method using data jpa concept.
 ````
 @Repository
 public interface FarmerInfoRepository extends JpaRepository<FarmerInfoEntity, Long> {
    Optional<FarmerInfoEntity> findBySeasonAndFarmerId(String season, String farmerId);
 }
 ````
-29. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
+25. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
 ````
 @Override
 public RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO) throws Exception {
 ````
-30. Define below autowired beans and configurations in ValidationServiceImpl.
+26. Define below autowired beans and configurations in ValidationServiceImpl.
 ````
     @Autowired
     RequestHandlerService requestHandlerService;
@@ -731,7 +731,7 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
     @Value("${crypto.from_dc.key.path}")
     private String farmer_key_path;
 ````
-31. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
+27. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
     1. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
     2. Take farmerKeyPath for dp .p12 file.
     3. Check isEncrypt flag , if true check isMsgEncrypt flag from header is true or false , if not true throw error that configurations are not valid.
@@ -835,12 +835,12 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
         return messageDTO;
     
 ````
-Implement below method from ValidationService in ValidationServiceImpl.
+28. Implement below method from ValidationService in ValidationServiceImpl.
 ````
 @Override
 public void validateRequestDTO(RequestDTO requestDTO) throws G2pcValidationException, IOException {
 ````
-Change QueryFarmerDTO , QueryParamsFarmerDTO , with respective data provider DTOs. In this method , validations of message and header methods are called from parent dp-core.
+29. Change QueryFarmerDTO , QueryParamsFarmerDTO , with respective data provider DTOs. In this method , validations of message and header methods are called from parent dp-core.
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(QueryDTO.class,
@@ -855,7 +855,7 @@ RequestHeaderDTO headerDTO = objectMapper.readerFor(RequestHeaderDTO.class).
 requestHandlerService.validateRequestHeader(headerDTO);
 requestHandlerService.validateRequestMessage(messageDTO);
 ````
-32. In Scheduler class define below autowired bean. these beans are from dp-core library and also custom created in dp.
+30. In Scheduler class define below autowired bean. these beans are from dp-core library and also custom created in dp.
 ````
     @Autowired
     private ResponseBuilderService responseBuilderService;
@@ -875,21 +875,21 @@ Define below method in Scheduler.
 @Transactional
 public void responseScheduler() throws IOException {
 ````  
-33. Define try catch in the same method.
-34. Add below snippet in method responseScheduler().
+31. Define try catch in the same method.
+32. Add below snippet in method responseScheduler().
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
 ````
-35.  Call method from txnTrackerRedisService to get cache list.
+33. Call method from txnTrackerRedisService to get cache list.
 ````
 List<String> cacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.CACHE_KEY_SEARCH_STRING);
 ````
-36. Check whether in list the status in PNDG or not.
+34. Check whether in list the status in PNDG or not.
 ````
 if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
 ````
-37. Add below code snippet to in FarmerResponseBuilderServiceImpl.
+35. Add below code snippet to in FarmerResponseBuilderServiceImpl.
 ````
 @Autowired
 private FarmerInfoRepository farmerInfoRepository;
@@ -939,7 +939,7 @@ public List<String> getRegFarmerRecords(List<QueryDTO> queryDTOList) throws IOEx
    return regFarmerRecordsList;
 
 ````
-38. Add below snippet in scheduler class method responseScheduler()  if condition.
+36. Add below snippet in scheduler class method responseScheduler()  if condition.
 ````
   {
                 String protocol = cacheDTO.getProtocol();
@@ -964,7 +964,7 @@ public List<String> getRegFarmerRecords(List<QueryDTO> queryDTOList) throws IOEx
                     
                 }
 ````
-39. Add below the catch statement at last as mentioned in point 33 that try is already written.
+37. Add below the catch statement at last as mentioned in point 33 that try is already written.
 ````
 catch ( G2pHttpException e){
    log.error("Exception thrown from on-search endpoint"+ e.getG2PcError().getMessage());
@@ -974,14 +974,14 @@ catch (Exception ex) {
 }
 
 ````
-40. This scheduler will run every 1 min. But to test this code write a test case in Test class.
+38. This scheduler will run every 1 min. But to test this code write a test case in Test class.
 ````
 @Test
 void testResponseScheduler() throws IOException {
    scheduler.responseScheduler();
 }
 ````
-41. Create new method in RegistryController for /status 
+39. Create new method in RegistryController for /status 
 ````
  @Operation(summary = "Receive status request")
     @ApiResponses(value = {
@@ -993,11 +993,11 @@ void testResponseScheduler() throws IOException {
     public AcknowledgementDTO handleStatusRequest(@RequestBody String requestString) throws Exception { 
     }
 ````
-42. Add below code for authenticating user
+40. Add below code for authenticating user
 ````
 dpCommonUtils.handleToken();
 ````
-43. Add below code for validating the statusRequest and updating cache. 
+41. Add below code for validating the statusRequest and updating cache. 
 ````
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class, HeaderDTO.class);
@@ -1025,18 +1025,18 @@ dpCommonUtils.handleToken();
         }
     
 ````
-44. Add below endpoint in RegistryController.java. 
+42. Add below endpoint in RegistryController.java. 
 ````
  @GetMapping(value = "/dashboard/sftp/dp1/data", produces = "text/event-stream")
     public SseEmitter sseEmitterFirstPanel() {
         return dpSftpPushUpdateService.register();
     }
 ````
-45. Add below overloaded method in FarmerValidationService 
+43. Add below overloaded method in FarmerValidationService 
 ````
 StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception ;
 ````
-45. Override above method in FarmerValidationServiceImpl.
+44. Override above method in FarmerValidationServiceImpl.
 ````
     @Override
     public StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception {
@@ -1136,11 +1136,11 @@ StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, Status
         return messageDTO;
     }
 ````
-46. Add below method to validated statusRequestMessage in FarmerValidationService.
+45. Add below method to validated statusRequestMessage in FarmerValidationService.
 ````
 void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, G2pcValidationException;
 ````
-47. Override above method in FarmerValidationServiceImpl
+46. Override above method in FarmerValidationServiceImpl
 ````
 @Override
     public void validateStatusRequestDTO(StatusRequestDTO statusRequestDTO) throws IOException, G2pcValidationException {
@@ -1156,7 +1156,7 @@ void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, 
         requestHandlerService.validateStatusRequestMessage(statusRequestMessageDTO);
     }
 ````
-48. To call on-status endpoint from dc add below snippet in scheduler class in try block. Refer application zip. 
+47. To call on-status endpoint from dc add below snippet in scheduler class in try block. Refer application zip. 
     1. Get cache key from redis stored with start of key "status-request-farmer*".
     2. Iterate list of cache.
     3. Get request data for particular cache key and convert it into cacheDTO.
@@ -1184,7 +1184,7 @@ void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, 
                 }
             }
 ```` 
-49. Create DpDashboardController for creating dashboard endpoints for Grafana.
+48. Create DpDashboardController for creating dashboard endpoints for Grafana.
 ````
 package g2pc.ref.farmer.regsvc.controller.rest;
 
@@ -1207,7 +1207,7 @@ public class DpDashboardController {
 }
 
 ````
-50. Add CorsConfig.java in config folder, refer below code.
+49. Add CorsConfig.java in config folder, refer below code.
 ````
 package g2pc.ref.farmer.regsvc.config;
 
@@ -1232,7 +1232,7 @@ public class CorsConfig implements WebMvcConfigurer {
     }
 }
 ````
-51. Add below dto SftpDpData in DP.
+50. Add below dto SftpDpData in DP.
 ````
 package g2pc.ref.farmer.regsvc.dto;
 
@@ -1252,7 +1252,7 @@ public class SftpDpData {
 }
 
 ````
-52. Add below interface in service package 
+51. Add below interface in service package 
 ````
 package g2pc.ref.farmer.regsvc.service;
 
@@ -1265,7 +1265,7 @@ public interface DpSftpPushUpdateService {
     void pushUpdate(Object update);
 }
 ````
-53. Implement service in below class.
+52. Implement service in below class.
 ````
 package g2pc.ref.farmer.regsvc.serviceimpl;
 
@@ -1419,7 +1419,7 @@ Implementation explained in below point when it act like data consumer -
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dc-package-structure.png)
 5. Add .p12 files for search received from dp and on-search 
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/.p12-dc.png)
-5. In the config package , create the ObjectMapperConfig.java class. This class is used to avoid ambiguity between parent class and child class of Header.
+6. In the config package , create the ObjectMapperConfig.java class. This class is used to avoid ambiguity between parent class and child class of Header.
 ````
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
@@ -1437,7 +1437,7 @@ public class ObjectMapperConfig {
     }
 }
 ````
-6. Take reference of below application.yml , create application.yml for particular dc with the help of details mentioned after .yml file.
+7. Take reference of below application.yml , create application.yml for particular dc with the help of details mentioned after .yml file.
 ````
 spring:
   mvc:
@@ -1801,7 +1801,7 @@ public class DcController {}
     return acknowledgementDTO;
     }
 ````
-15. To run above entrypoint refer below curl.
+14. To run above entrypoint refer below curl.
 ````
 curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 --header 'Content-Type: application/json' \
@@ -1814,7 +1814,7 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 }'
 
 ````
-16. Create below entry point for triggering dc communication for multiple data using csv file.
+15. Create below entry point for triggering dc communication for multiple data using csv file.
 ````
  @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -1842,12 +1842,12 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
         return acknowledgementDTO;
     }
 ````
-17. To run above entrypoint refer below curl and create one payload.csv with multiple data.
+16. To run above entrypoint refer below curl and create one payload.csv with multiple data.
 ````
 curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
 ````
-18. Create below endpoint for clearing db in dc.
+17. Create below endpoint for clearing db in dc.
 ````
  @GetMapping("/public/api/v1/registry/clear-db")
     public void clearDb() throws G2pHttpException, IOException {
@@ -1879,7 +1879,7 @@ curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
         log.info("DC Redis cache cleared");
     }
 ````
-19. Add below exception handling in the DC controller.
+18. Add below exception handling in the DC controller.
 ````
 @ExceptionHandler(value = G2pcValidationException.class)
 @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -2209,7 +2209,7 @@ public class DcCommonUtils {
 }
 
 ````
-26. Add below values from application.yml to validate token
+27. Add below values from application.yml to validate token
 ````
   @Autowired
     G2pTokenService g2pTokenService;
@@ -2269,7 +2269,7 @@ public class DcCommonUtils {
     private String sftpDcLocalOutboundDirectory;
 
 ````
-27. Add below methods in DcCommonUtils.java to handle and validate token and to get sftp configuration for dc.
+28. Add below methods in DcCommonUtils.java to handle and validate token and to get sftp configuration for dc.
 ````
     public void handleToken() throws G2pHttpException, JsonProcessingException {
         String token = BearerTokenUtil.getBearerTokenHeader();
@@ -2313,7 +2313,7 @@ public class DcCommonUtils {
         }
     }
 ````
-28. Create DcValidationService interface with 3 methods , validateRegRecords() this method is dc specific , to validate query params.
+29. Create DcValidationService interface with 3 methods , validateRegRecords() this method is dc specific , to validate query params.
 ````
 @Service
 public interface DcValidationService {
@@ -2327,13 +2327,13 @@ public interface DcValidationService {
     void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException;
 }
 ````
-29. Create DcValidationServiceImpl class to implement DcValidationService interface and override method.
+30. Create DcValidationServiceImpl class to implement DcValidationService interface and override method.
 ````
 @Service
 @Slf4j
 public class DcValidationServiceImpl implements DcValidationService {
 ````
-30. Add below autowired beans in DcValidationServiceImpl. Add below values for all required dps.
+31. Add below autowired beans in DcValidationServiceImpl. Add below values for all required dps.
 ````
     @Autowired
     ResponseHandlerService responseHandlerService;
@@ -2363,7 +2363,7 @@ public class DcValidationServiceImpl implements DcValidationService {
     @Value("${crypto.from_dp_farmer.id}")
     private String farmerID;
 ````
-31. Override below signatureValidation() method and add required if conditions for required dps.
+32. Override below signatureValidation() method and add required if conditions for required dps.
     1. Check get string from CoreConstants.DP_ID for respective farmer ids , and add respective attributes.
     2. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
     2. Take farmerKeyPath for dp .p12 file.
@@ -2486,7 +2486,7 @@ public class DcValidationServiceImpl implements DcValidationService {
         return messageDTO;
     }
 ````
-32. Override validateResponse() to validate ResponseDTO
+33. Override validateResponse() to validate ResponseDTO
 ````
  @Override
     public void validateResponseDto(ResponseDTO responseDTO) throws Exception {
@@ -2502,14 +2502,14 @@ public class DcValidationServiceImpl implements DcValidationService {
         responseHandlerService.validateResponseMessage(messageDTO);
     }
 ````
-33. Create DcResponseHandlerService interface to handle the response
+34. Create DcResponseHandlerService interface to handle the response
 ````
 public interface DcResponseHandlerService {
 
     AcknowledgementDTO getResponse(ResponseDTO responseDTO) throws JsonProcessingException;
 }
 ````
-34. Create DcResponseHandlerServiceImpl class which implements DcResponseHandlerService interface 
+35. Create DcResponseHandlerServiceImpl class which implements DcResponseHandlerService interface 
 ````
 @Service
 @Slf4j
@@ -2541,7 +2541,7 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
     }
 }
 ````
-35. Create new entrypoint method for /status. 
+36. Create new entrypoint method for /status. 
 ````
  @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -2559,17 +2559,17 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
         return acknowledgementDTO;
     }
 ````
-Refer below curl to execute above entrypoint. In which you can see we are sending transactionId for which we wanted to know status and action/transactionType for which we are searching status.
+37. Refer below curl to execute above entrypoint. In which you can see we are sending transactionId for which we wanted to know status and action/transactionType for which we are searching status.
 ````
 curl --location \
  --request \
  POST 'localhost:8000/private/api/v1/consumer/status/payload?transactionId=T757-5372-9253-9725-4673&transactionType=search'
 ````
-36. Declare below method in DcRequestBuilderService interface to generate request for /status endpoint. 
+38. Declare below method in DcRequestBuilderService interface to generate request for /status endpoint. 
 ````
  AcknowledgementDTO generateStatusRequest(String transactionID,String transactionType) throws Exception;
 ````
-37. Override the above method in DcRequestBuilderServiceImpl class.
+39. Override the above method in DcRequestBuilderServiceImpl class.
     1. Generate unique transaction id for status transaction. 
     2. Find registryType from response_tracker and response using transactionId given from postman.
     3. Fetch registry specific map from registryConfig class , as it returns values specified for registry like url and credentials.
@@ -2631,7 +2631,7 @@ curl --location \
         return acknowledgementDTO;
     }
 ````
-38. Define the below method in DcController to create /on-status endpoint which will get call from dp side.
+40. Define the below method in DcController to create /on-status endpoint which will get call from dp side.
     1. call commonUtils.handleToken() method to authenticate user.
     2. Declare objectMapper and add neccessary dependencies.
     3. Get statusResponseDto by converting string to object using objectMapper.
@@ -2670,13 +2670,13 @@ curl --location \
         return acknowledgementDTO;
     }
 ````
-39. Add below 2 methods in DcValidationService for signatureValidation of statusResponseMessageDto and validate statusResponseDto.
+41. Add below 2 methods in DcValidationService for signatureValidation of statusResponseMessageDto and validate statusResponseDto.
 ````
     StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception;
 
     void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException;
 ````
-40. Override signatureValidation() method in DcValidationServiveImpl.
+42. Override signatureValidation() method in DcValidationServiveImpl.
 ````
 @Override
     public StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception {
@@ -2790,7 +2790,7 @@ curl --location \
         return messageDTO;
     }
 ````
-41. Override validateStatusResponseDTO() method in DcValidationServiceImpl.
+43. Override validateStatusResponseDTO() method in DcValidationServiceImpl.
 ````
 @Override
     public void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException {
@@ -2805,12 +2805,12 @@ curl --location \
         responseHandlerService.validateStatusResponseMessage(statusResponseMessageDTO);
     }
 ````
-42. Add below method in DcResponseHandlerService interface.
+44. Add below method in DcResponseHandlerService interface.
 ````
 AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException;
 
 ````
-43. Override above method in DcResponseHandlerServiceImpl class.
+45. Override above method in DcResponseHandlerServiceImpl class.
 ````
 @Override
     public AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException {
@@ -2833,14 +2833,14 @@ AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws
         return acknowledgementDTO;
     }
 ````
-43. Create DcDashboardController.java for creating endpoints for dashboard of Grafana.
+46. Create DcDashboardController.java for creating endpoints for dashboard of Grafana.
 ````
 @Controller
 @Slf4j
 public class DcDashboardController { 
 }
 ````
-43. Add below configuration values which added in application.yml
+47. Add below configuration values which added in application.yml
 ````
   @Value("${dashboard.left_panel_url}")
     private String leftPanelUrl;
@@ -2896,7 +2896,7 @@ public class DcDashboardController {
     @Autowired
     private RequestBuilderService requestBuilderService;
 ````
-44. Create below endpoint method 
+48. Create below endpoint method 
 ````
 @GetMapping("/dashboard")
     public String showDashboardPage(Model model) throws IOException, ParseException {
@@ -2936,7 +2936,7 @@ public class DcDashboardController {
     }
 ````
 
-45. Create method createStatusRequestSftp() for creating endpoint to listen to CSV file payload to handle using SFTP in DcController.
+49. Create method createStatusRequestSftp() for creating endpoint to listen to CSV file payload to handle using SFTP in DcController.
 ````
  @Operation(summary = "Listen to CSV file payload to handle using SFTP")
     @ApiResponses(value = {
@@ -2974,12 +2974,12 @@ public class DcDashboardController {
         return acknowledgementDTO;
     }
 ````
-47. Import below curl to run the endpoint and add payload.csv
+50. Import below curl to run the endpoint and add payload.csv
 ````
 curl --location 'localhost:8000/public/api/v1/consumer/search/sftp/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
 ````
-48. Add below 2 methods in DcController.
+51. Add below 2 methods in DcController.
 ````
     @GetMapping("/dashboard/leftPanel/data")
     public List<HttpsLeftPanelDataDTO> fetchLeftPanelData() {
@@ -3005,7 +3005,7 @@ curl --location 'localhost:8000/public/api/v1/consumer/search/sftp/csv' \
         return dcSftpPushUpdateService.register();
     }
 ````
-49. Add interface DcSftpPushUpdateService in service class. 
+52. Add interface DcSftpPushUpdateService in service class. 
 ````
 package g2pc.ref.dc.client.service;
 
@@ -3017,7 +3017,7 @@ public interface DcSftpPushUpdateService {
 
 }
 ````
-50. Implement DcSftpPushUpdateServiceImpl from DcSftpPushUpdateService , refer below code.
+53. Implement DcSftpPushUpdateServiceImpl from DcSftpPushUpdateService , refer below code.
 ````
 @Service
 @Slf4j
@@ -3054,7 +3054,7 @@ public class DcSftpPushUpdateServiceImpl implements DcSftpPushUpdateService {
     }
 }
 ````
-51. Add dto HttpsLeftPanelDataDTO in package g2pc.ref.dc.client.dto.dashboard
+54. Add dto HttpsLeftPanelDataDTO in package g2pc.ref.dc.client.dto.dashboard
 ````
 @Data
 @AllArgsConstructor
@@ -3066,7 +3066,7 @@ public class HttpsLeftPanelDataDTO {
     private String status;
 }
 ````
-52. Add SftpDcData dto in package g2pc.ref.dc.client.dto.dashboard
+55. Add SftpDcData dto in package g2pc.ref.dc.client.dto.dashboard
 ````
 @Data
 @AllArgsConstructor
@@ -3078,8 +3078,7 @@ public class SftpDcData {
     private String fileName;
     private String sftpDirectoryType;
 }
-````
-53. 
+```` 
 
 # 8. Keycloak configuration
 ### Steps for DC and DP -
@@ -3226,11 +3225,10 @@ sudo docker-compose up -d --no-deps --force-recreate rg
 ````
 This command rebuilds and recreates the Sunbird-RC registry container (g2pc-rg-1), excluding its dependencies.
 It ensures that the container starts with a fresh configuration.
-8. Check the running containers:
+8. Check the running containers and Verify that the containers are up and running.
 ````
 sudo docker ps
 ````
-Verify that the containers are up and running.
 9. Adjust paths and container names accordingly based on your specific setup and configurations. 
 10. These commands use Docker Compose to manage and orchestrate the containers. 
 11. The --no-deps flag ensures that only the specified service is recreated without starting its dependencies. 
@@ -3239,7 +3237,6 @@ Verify that the containers are up and running.
 ````
  sudo docker restart {container-name}
 ````
-14. 
   
 
 
