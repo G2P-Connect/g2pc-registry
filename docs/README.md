@@ -247,121 +247,7 @@ public class FarmerResponseBuilderServiceImpl implements FarmerResponseBuilderSe
 public class FarmerValidationServiceImpl implements FarmerValidationService {
  } 
 ````
-12. Create DpCommonUtils for handling token and sftp request.
-````
-import com.fasterxml.jackson.core.JsonProcessingException;
-import g2pc.core.lib.enums.ExceptionsENUM;
-import g2pc.core.lib.exceptions.G2pHttpException;
-import g2pc.core.lib.exceptions.G2pcError;
-import g2pc.core.lib.security.BearerTokenUtil;
-import g2pc.core.lib.security.service.G2pTokenService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-
-@Service
-@Slf4j
-public class DpCommonUtils {
-    }
-}
-````
-13. Add below autowired dependent bean and values configured with application.yml to authenticate user in DpCommonUtils.
-````
-    @Value("${keycloak.dp.client.realm}")
-    private String keycloakRealm;
-
-    @Value("${keycloak.dp.master.getClientUrl}")
-    private String getClientUrl;
-
-    @Value("${crypto.to_dc.support_encryption}")
-    private boolean isEncrypt;
-
-    @Value("${crypto.to_dc.support_signature}")
-    private boolean isSign;
-
-    @Value("${keycloak.dp.client.url}")
-    private String keycloakURL;
-
-    @Value("${keycloak.dp.client.clientId}")
-    private String keycloakClientId;
-
-    @Value("${keycloak.dp.client.clientSecret}")
-    private String keycloakClientSecret;
-
-    @Value("${keycloak.dp.master.url}")
-    private String masterUrl;
-
-    @Value("${keycloak.dp.master.clientId}")
-    private String masterClientId;
-
-    @Value("${keycloak.dp.master.clientSecret}")
-    private String masterClientSecret;
-
-    @Value("${keycloak.dp.username}")
-    private String adminUsername;
-
-    @Value("${keycloak.dp.password}")
-    private String adminPassword;
-
-    @Autowired
-    G2pTokenService g2pTokenService;
-
-    @Value("${sftp.dc.host}")
-    private String sftpDcHost;
-
-    @Value("${sftp.dc.port}")
-    private int sftpDcPort;
-
-    @Value("${sftp.dc.user}")
-    private String sftpDcUser;
-
-    @Value("${sftp.dc.password}")
-    private String sftpDcPassword;
-
-    @Value("${sftp.dc.remote.outbound_directory}")
-    private String sftpDcRemoteOutboundDirectory;
-````
-14.  Create handleToken() method to introspect the token whether it is from valid keycloak dp or not in handleToken() method and validateToken using g2pc-core predefined methods in DpCommonUtils.
-````
- 
- public void handleToken() throws G2pHttpException, JsonProcessingException {
-        log.info("Is encrypted ? -> " + isEncrypt);
-        log.info("Is signed ? -> " + isSign);
-        String token = BearerTokenUtil.getBearerTokenHeader();
-        String introspectUrl = keycloakURL + "/introspect";
-        ResponseEntity<String> introspectResponse = g2pTokenService.getInterSpectResponse(introspectUrl, token,
-                keycloakClientId, keycloakClientSecret);
-        log.info("Introspect response -> " + introspectResponse.getStatusCode());
-        log.info("Introspect response body -> " + introspectResponse.getBody());
-        if (introspectResponse.getStatusCode().value() == 401) {
-            throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(), introspectResponse.getBody()));
-        }
-
-        if (!g2pTokenService.validateToken(masterUrl, getClientUrl,
-                g2pTokenService.decodeToken(token), masterClientId, masterClientSecret,
-                adminUsername, adminPassword)) {
-          
-            throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
-        }
-        
-````
-15. Add getSftpConfigForDp() in DpCommonUtils to fetch sftp configurations.
-````
-  public SftpServerConfigDTO getSftpConfigForDp() {
-        SftpServerConfigDTO sftpServerConfigDTO = new SftpServerConfigDTO();
-        sftpServerConfigDTO.setHost(sftpDcHost);
-        sftpServerConfigDTO.setPort(sftpDcPort);
-        sftpServerConfigDTO.setUser(sftpDcUser);
-        sftpServerConfigDTO.setPassword(sftpDcPassword);
-        sftpServerConfigDTO.setAllowUnknownKeys(true);
-        sftpServerConfigDTO.setStrictHostKeyChecking("no");
-        sftpServerConfigDTO.setRemoteOutboundDirectory(sftpDcRemoteOutboundDirectory);
-        return sftpServerConfigDTO;
-    }
-````
-17. Add below autowired dependencies in the RegistryController class.
+12. Add below autowired dependencies in the RegistryController class.
 ````
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -374,8 +260,15 @@ public class DpCommonUtils {
     
     @Autowired
     private MsgTrackerRepository msgTrackerRepository;
+    
+     @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Autowired
+    private DpSftpPushUpdateService dpSftpPushUpdateService;
+
 ````
-18. Add below application.yml and update as per below instructions.
+13. Add below application.yml and update as per below instructions.
 ````
 spring:
   mvc:
@@ -516,8 +409,15 @@ sftp:
     password: {password of sftp connection}
     remote:
       outbound_directory: {path mentioned in sftp client for outbound}
+
+sunbird:
+  enabled: true
+  elasticsearch:
+    host: {domain of elasticsearch like if running on local env i.e localhost} 
+    port: {port mention in docker-compose for elastic search}
+    scheme: http
 ```` 
-20. Define below endpoint in RegistryController.
+14. Define below endpoint in RegistryController.
 ````
 @Operation(summary = "Receive search request")
 @ApiResponses(value = {
@@ -529,7 +429,7 @@ sftp:
 public AcknowledgementDTO handleRequest(@RequestBody String requestString) throws Exception {
 
 ````
-21. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO in handleRequest().
+15. Add below code in the same method to add subtype in objectMapper to convert String in requestDTO in handleRequest().
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(RequestHeaderDTO.class,
@@ -540,13 +440,13 @@ RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
        readValue(requestString);
 RequestMessageDTO messageDTO = null;
 ````
-22. Add below code snippet handleRequest() to validate signature and encryption.
+16. Add below code snippet handleRequest() to validate signature and encryption.
 ````
 Map <String , Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
 messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
 requestDTO.setMessage(messageDTO);
 ````
-23. Add below code snippet in handleRequest() to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
+17. Add below code snippet in handleRequest() to validate requestDTO as per g2p specifications and  build cache request for Request string. In this buildCacheRequest it has already been defined in parent libraries , just need to call.
 ````
 String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
 try {
@@ -564,7 +464,7 @@ catch (Exception e){
 }
 
 ````
-24. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
+18. Add below 2 methods Custom Exception handling using spring boot annotations in RegistryController.
 ````
 @ExceptionHandler(value
        = G2pcValidationException.class)
@@ -585,15 +485,21 @@ public ErrorResponse handleG2pHttpStatusException(
    }
 
 ````
-25. Create below endpoint for clearing the db.
+19. Create below endpoint for clearing the db.
 ````
   @GetMapping("/public/api/v1/registry/clear-db")
     public void clearDb() throws G2pHttpException, IOException {
+         dpCommonUtils.handleToken();
         msgTrackerRepository.deleteAll();
         log.info("DP-1 DB cleared");
+        Set<String> keys = redisTemplate.keys("*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+        log.info("DP-1 Redis cache cleared");
     }
 ````
-26. Create below class DcSftpListener for handing sftp request.
+20. Create below class DcSftpListener for handing sftp request.
 ````
 package g2pc.ref.farmer.regsvc.controller.sftp;
 
@@ -690,7 +596,7 @@ public class DcSftpListener {
     }
 }
 ````
-27. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
+21. Create Query and Query param dto for data provider requirement in dto.request package. Below are examples.
 ````
 @Getter
 @Setter
@@ -720,7 +626,7 @@ public class QueryParamsFarmerDTO {
 }
 
 ````
-27. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
+22. Create regRecordDTO for data provider as per on search endpoint requirement in dto.response package shown below.
 ````
 @Getter
 @Setter
@@ -760,7 +666,7 @@ public class RegRecordFarmerDTO {
 }
 
 ````
-28. To get data provider information create a data-provider info table in db , entity and repository as shown below.
+23. To get data provider information create a data-provider info table in db , entity and repository as shown below.
 ````
 @Builder
 @Data
@@ -787,19 +693,19 @@ public class FarmerInfoEntity {
    private Double paymentAmount;
 
 ````
-Write your respective method using data jpa concept.
+24. Write your respective method using data jpa concept.
 ````
 @Repository
 public interface FarmerInfoRepository extends JpaRepository<FarmerInfoEntity, Long> {
    Optional<FarmerInfoEntity> findBySeasonAndFarmerId(String season, String farmerId);
 }
 ````
-29. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
+25. Define below method in ValidationServiceImpl as it has implemented from ValidationService interface.
 ````
 @Override
 public RequestMessageDTO signatureValidation(Map<String, Object> metaData, RequestDTO requestDTO) throws Exception {
 ````
-30. Define below autowired beans and configurations in ValidationServiceImpl.
+26. Define below autowired beans and configurations in ValidationServiceImpl.
 ````
     @Autowired
     RequestHandlerService requestHandlerService;
@@ -825,7 +731,7 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
     @Value("${crypto.from_dc.key.path}")
     private String farmer_key_path;
 ````
-31. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
+27. Add below code snippet in signatureValidation method. This is the validation for signature and encryption to check whether this is transferred correctly.
     1. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
     2. Take farmerKeyPath for dp .p12 file.
     3. Check isEncrypt flag , if true check isMsgEncrypt flag from header is true or false , if not true throw error that configurations are not valid.
@@ -929,12 +835,12 @@ public RequestMessageDTO signatureValidation(Map<String, Object> metaData, Reque
         return messageDTO;
     
 ````
-Implement below method from ValidationService in ValidationServiceImpl.
+28. Implement below method from ValidationService in ValidationServiceImpl.
 ````
 @Override
 public void validateRequestDTO(RequestDTO requestDTO) throws G2pcValidationException, IOException {
 ````
-Change QueryFarmerDTO , QueryParamsFarmerDTO , with respective data provider DTOs. In this method , validations of message and header methods are called from parent dp-core.
+29. Change QueryFarmerDTO , QueryParamsFarmerDTO , with respective data provider DTOs. In this method , validations of message and header methods are called from parent dp-core.
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(QueryDTO.class,
@@ -949,14 +855,8 @@ RequestHeaderDTO headerDTO = objectMapper.readerFor(RequestHeaderDTO.class).
 requestHandlerService.validateRequestHeader(headerDTO);
 requestHandlerService.validateRequestMessage(messageDTO);
 ````
-32. In Scheduler class define below autowired bean. these beans are from dp-core library and also custom created in dp.
+30. In Scheduler class define below autowired bean. these beans are from dp-core library and also custom created in dp.
 ````
-    @Value("${client.api_urls.client_search_api}")
-    String onSearchURL;
-    
-    @Autowired
-    private RequestHandlerService requestHandlerService;
-
     @Autowired
     private ResponseBuilderService responseBuilderService;
 
@@ -967,31 +867,7 @@ requestHandlerService.validateRequestMessage(messageDTO);
     private TxnTrackerRedisService txnTrackerRedisService;
 
     @Autowired
-    private MsgTrackerRepository msgTrackerRepository;
-
-    @Autowired
-    private TxnTrackerRepository txnTrackerRepository;
-
-    @Autowired
     private TxnTrackerDbService txnTrackerDbService;
-
-    @Autowired
-    private ResourceLoader resourceLoader;
-    
-    @Value("${keycloak.from-dc.client-id}")
-    private String dcClientId;
-
-    @Value("${keycloak.from-dc.client-secret}")
-    private String dcClientSecret;
-
-    @Value("${keycloak.from-dc.url}")
-    private String keyClockClientTokenUrl;
-
-    @Value("${crypto.to_dc.id}")
-    private String dp_id;
-
-    @Value("${crypto.to_dc.key.path}")
-    private String farmer_key_path;
 ````
 Define below method in Scheduler.
 ````
@@ -999,21 +875,21 @@ Define below method in Scheduler.
 @Transactional
 public void responseScheduler() throws IOException {
 ````  
-33. Define try catch in the same method.
-34. Add below snippet in method responseScheduler().
+31. Define try catch in the same method.
+32. Add below snippet in method responseScheduler().
 ````
 ObjectMapper objectMapper = new ObjectMapper();
 objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
 ````
-35.  Call method from txnTrackerRedisService to get cache list.
+33. Call method from txnTrackerRedisService to get cache list.
 ````
 List<String> cacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.CACHE_KEY_SEARCH_STRING);
 ````
-36. Check whether in list the status in PNDG or not.
+34. Check whether in list the status in PNDG or not.
 ````
 if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
 ````
-37. Add below code snippet to in FarmerResponseBuilderServiceImpl.
+35. Add below code snippet to in FarmerResponseBuilderServiceImpl.
 ````
 @Autowired
 private FarmerInfoRepository farmerInfoRepository;
@@ -1063,14 +939,12 @@ public List<String> getRegFarmerRecords(List<QueryDTO> queryDTOList) throws IOEx
    return regFarmerRecordsList;
 
 ````
-38. Add below snippet in scheduler class method responseScheduler()  if condition.
+36. Add below snippet in scheduler class method responseScheduler()  if condition.
 ````
   {
+                String protocol = cacheDTO.getProtocol();
                     RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).readValue(cacheDTO.getData());
-                    RequestMessageDTO messageDTO = objectMapper.convertValue(requestDTO.getMessage(), RequestMessageDTO.class);
-                    String transactionId = messageDTO.getTransactionId();
-
-                    MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveRequestDetails(requestDTO);
+                    MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveRequestDetails(requestDTO, protocol);
                     List<QueryDTO> queryDTOList = msgTrackerEntity.getTxnTrackerEntityList().stream()
                             .map(txnTrackerEntity -> {
                                 try {
@@ -1080,51 +954,17 @@ public List<String> getRegFarmerRecords(List<QueryDTO> queryDTOList) throws IOEx
                                 }
                             }).toList();
                     List<String> refRecordsStringsList = farmerResponseBuilderService.getRegFarmerRecords(queryDTOList);
-
-                    List<SearchResponseDTO> searchResponseDTOList = txnTrackerDbService.getUpdatedSearchResponseList(
-                            requestDTO, refRecordsStringsList);
-
-                    ResponseHeaderDTO headerDTO = responseBuilderService.getResponseHeaderDTO(msgTrackerEntity);
-
-                    ResponseMessageDTO responseMessageDTO = responseBuilderService.buildResponseMessage(transactionId, searchResponseDTOList);
-                    Map<String, Object> meta = (Map<String, Object>) headerDTO.getMeta().getData();
-                    meta.put(CoreConstants.DP_ID, dp_id);
-                    requestDTO.getHeader().getMeta().setData(meta);
-                    String responseString = responseBuilderService.buildResponseString("signature",
-                            headerDTO, responseMessageDTO);
-                    responseString = CommonUtils.formatString(responseString);
-                    log.info("on-search response = {}", responseString);
-                    txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
-                    Resource resource = resourceLoader.getResource(farmer_key_path);
-                    String encryptedSalt = "";
-                    InputStream fis = resource.getInputStream();
-                    G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(responseString, onSearchURL, dcClientId, dcClientSecret, keyClockClientTokenUrl, fis, encryptedSalt);
+                    G2pcError g2pcError = responseBuilderService.buildOnSearchScheduler(refRecordsStringsList , cacheDTO);
+                    log.info("on-search database updation response from sunbird - "+g2pcError.getCode());
                     if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
                         throw new G2pHttpException(g2pcError);
                     } else {
-                       txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
-                    }
-                     List<String> statusCacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.STATUS_CACHE_KEY_SEARCH_STRING);
-                    for (String cacheKey : statusCacheKeysList) {
-                String requestData = txnTrackerRedisService.getRequestData(cacheKey);
-                CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
-                if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
-                    StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).readValue(cacheDTO.getData());
-                    StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
-                    G2pcError g2pcError = responseBuilderService.buildOnStatusScheduler(cacheDTO);
-
-                    if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
-                        throw new G2pHttpException(g2pcError);
-                    } else {
-                        txnTrackerDbService.updateMessageTrackerStatusDb(statusRequestMessageDTO.getTransactionId());
                         txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
                     }
-                }
-            }
                     
                 }
 ````
-39. Add below the catch statement at last as mentioned in point 33 that try is already written.
+37. Add below the catch statement at last as mentioned in point 33 that try is already written.
 ````
 catch ( G2pHttpException e){
    log.error("Exception thrown from on-search endpoint"+ e.getG2PcError().getMessage());
@@ -1134,14 +974,14 @@ catch (Exception ex) {
 }
 
 ````
-40. This scheduler will run every 1 min. But to test this code write a test case in Test class.
+38. This scheduler will run every 1 min. But to test this code write a test case in Test class.
 ````
 @Test
 void testResponseScheduler() throws IOException {
    scheduler.responseScheduler();
 }
 ````
-41. Create new method in RegistryController for /status 
+39. Create new method in RegistryController for /status 
 ````
  @Operation(summary = "Receive status request")
     @ApiResponses(value = {
@@ -1153,11 +993,11 @@ void testResponseScheduler() throws IOException {
     public AcknowledgementDTO handleStatusRequest(@RequestBody String requestString) throws Exception { 
     }
 ````
-42. Add below code for authenticating user
+40. Add below code for authenticating user
 ````
 dpCommonUtils.handleToken();
 ````
-43. Add below code for validating the statusRequest and updating cache. 
+41. Add below code for validating the statusRequest and updating cache. 
 ````
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class, HeaderDTO.class);
@@ -1185,18 +1025,18 @@ dpCommonUtils.handleToken();
         }
     
 ````
-44. Add below endpoint in RegistryController.java. 
+42. Add below endpoint in RegistryController.java. 
 ````
  @GetMapping(value = "/dashboard/sftp/dp1/data", produces = "text/event-stream")
     public SseEmitter sseEmitterFirstPanel() {
         return dpSftpPushUpdateService.register();
     }
 ````
-45. Add below overloaded method in FarmerValidationService 
+43. Add below overloaded method in FarmerValidationService 
 ````
 StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception ;
 ````
-45. Override above method in FarmerValidationServiceImpl.
+44. Override above method in FarmerValidationServiceImpl.
 ````
     @Override
     public StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, StatusRequestDTO requestDTO) throws Exception {
@@ -1296,11 +1136,11 @@ StatusRequestMessageDTO signatureValidation(Map<String, Object> metaData, Status
         return messageDTO;
     }
 ````
-46. Add below method to validated statusRequestMessage in FarmerValidationService.
+45. Add below method to validated statusRequestMessage in FarmerValidationService.
 ````
 void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, G2pcValidationException;
 ````
-47. Override above method in FarmerValidationServiceImpl
+46. Override above method in FarmerValidationServiceImpl
 ````
 @Override
     public void validateStatusRequestDTO(StatusRequestDTO statusRequestDTO) throws IOException, G2pcValidationException {
@@ -1316,7 +1156,7 @@ void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, 
         requestHandlerService.validateStatusRequestMessage(statusRequestMessageDTO);
     }
 ````
-48. To call on-status endpoint from dc add below snippet in scheduler class in try block. Refer application zip. 
+47. To call on-status endpoint from dc add below snippet in scheduler class in try block. Refer application zip. 
     1. Get cache key from redis stored with start of key "status-request-farmer*".
     2. Iterate list of cache.
     3. Get request data for particular cache key and convert it into cacheDTO.
@@ -1326,40 +1166,25 @@ void validateStatusRequestDTO (StatusRequestDTO requestDTO) throws IOException, 
     7. Build StatusResponseMessageDto using StatusRequestMessageDto.
     8. Build StatusResponseString , create resource using farmer key path and send response to dc. 
 ````
-List < String > statusCacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.STATUS_CACHE_KEY_SEARCH_STRING);
-for (String cacheKey: statusCacheKeysList) {
-    String requestData = txnTrackerRedisService.getRequestData(cacheKey);
-    CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
-    if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
-        StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).readValue(cacheDTO.getData());
-        StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
-
-        MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveStatusRequestDetails(statusRequestDTO);
-        ResponseHeaderDTO responseHeaderDTO = responseBuilderService.getResponseHeaderDTO(msgTrackerEntity);
-
-        StatusResponseMessageDTO statusResponseMessageDTO = responseBuilderService.buildStatusResponseMessage(statusRequestMessageDTO);
-
-        Map < String, Object > meta = (Map < String, Object > ) responseHeaderDTO.getMeta().getData();
-        meta.put(CoreConstants.DP_ID, dp_id);
-        statusRequestDTO.getHeader().getMeta().setData(meta);
-
-        String statusResponseString = responseBuilderService.buildStatusResponseString("signature", responseHeaderDTO, statusResponseMessageDTO);
-        statusResponseString = CommonUtils.formatString(statusResponseString);
-        log.info("on-status response = {}", statusResponseString);
-        Resource resource = resourceLoader.getResource(farmer_key_path);
-        String encryptedSalt = "";
-        InputStream fis = resource.getInputStream();
-        G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(statusResponseString, onStatusURL, dcClientId, dcClientSecret, keyClockClientTokenUrl, fis, encryptedSalt, CoreConstants.DP_STATUS_URL);
-        if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
-            throw new G2pHttpException(g2pcError);
-        } else {
-            txnTrackerDbService.updateMessageTrackerStatusDb(statusRequestMessageDTO.getTransactionId());
-            txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
-        }
-    }
-}
+   List<String> statusCacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.STATUS_CACHE_KEY_SEARCH_STRING);
+            for (String cacheKey : statusCacheKeysList) {
+                String requestData = txnTrackerRedisService.getRequestData(cacheKey);
+                CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
+                if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
+                    StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).readValue(cacheDTO.getData());
+                    StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
+                    G2pcError g2pcError = responseBuilderService.buildOnStatusScheduler(cacheDTO);
+                    log.info("on-status database updation response from sunbird - "+g2pcError.getCode());
+                    if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
+                        throw new G2pHttpException(g2pcError);
+                    } else {
+                        txnTrackerDbService.updateMessageTrackerStatusDb(statusRequestMessageDTO.getTransactionId());
+                        txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+                    }
+                }
+            }
 ```` 
-49. Create DpDashboardController for creating dashboard endpoints for Grafana.
+48. Create DpDashboardController for creating dashboard endpoints for Grafana.
 ````
 package g2pc.ref.farmer.regsvc.controller.rest;
 
@@ -1379,12 +1204,10 @@ public class DpDashboardController {
         model.addAttribute("dp_dashboard_url", dpDashboardUrl);
         return "dashboard";
     }
-
-
 }
 
 ````
-50. Add CorsConfig.java in config folder, refer below code.
+49. Add CorsConfig.java in config folder, refer below code.
 ````
 package g2pc.ref.farmer.regsvc.config;
 
@@ -1409,7 +1232,7 @@ public class CorsConfig implements WebMvcConfigurer {
     }
 }
 ````
-51. Add below dto SftpDpData in DP.
+50. Add below dto SftpDpData in DP.
 ````
 package g2pc.ref.farmer.regsvc.dto;
 
@@ -1429,7 +1252,7 @@ public class SftpDpData {
 }
 
 ````
-52. Add below interface in service package 
+51. Add below interface in service package 
 ````
 package g2pc.ref.farmer.regsvc.service;
 
@@ -1442,7 +1265,7 @@ public interface DpSftpPushUpdateService {
     void pushUpdate(Object update);
 }
 ````
-53. Implement service in below class.
+52. Implement service in below class.
 ````
 package g2pc.ref.farmer.regsvc.serviceimpl;
 
@@ -1491,7 +1314,6 @@ public class DpSftpPushUpdateServiceImpl implements DpSftpPushUpdateService {
 }
 
 ````
-54. 
 
 # 6. Data Consumer (DC) Implementation
 - In DC implementation , as explained in Overview of libraries , dependency of G2pc-dc-core-lib needs to be added.
@@ -1519,7 +1341,7 @@ Implementation explained in below point when it act like data consumer -
 2. Extract the downloaded jar and open it in IDE. 
 3. Add below dependencies in <dependencies> tag in pom.xml
 ````
-      <dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
@@ -1582,12 +1404,22 @@ Implementation explained in below point when it act like data consumer -
             <artifactId>spring-boot-devtools</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>javax.servlet.jsp.jstl</groupId>
+            <artifactId>javax.servlet.jsp.jstl-api</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>7.10.2</version>
+        </dependency>
 ````
 4. Create package structure shown below.
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/dc-package-structure.png)
 5. Add .p12 files for search received from dp and on-search 
 ![Alt text](https://github.com/G2P-Connect/g2pc-registry/blob/alpha-1.0/docs/src/images/.p12-dc.png)
-5. In the config package , create the ObjectMapperConfig.java class. This class is used to avoid ambiguity between parent class and child class of Header.
+6. In the config package , create the ObjectMapperConfig.java class. This class is used to avoid ambiguity between parent class and child class of Header.
 ````
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
@@ -1605,7 +1437,7 @@ public class ObjectMapperConfig {
     }
 }
 ````
-6. Take reference of below application.yml , create application.yml for particular dc with the help of details mentioned after .yml file.
+7. Take reference of below application.yml , create application.yml for particular dc with the help of details mentioned after .yml file.
 ````
 spring:
   mvc:
@@ -1722,7 +1554,16 @@ dashboard:
   post_endpoint_url: "http://localhost:8000/public/api/v1/consumer/search/csv"
   clear_dc_db_endpoint_url: "http://{host}:{port of dc}/private/api/v1/registry/clear-db"
   clear_dp1_db_endpoint_url: "http://{host}:{port of dp1}/private/api/v1/registry/clear-db"
-
+  # Add all respective clear-db endpoint of all dp example is above. 
+  left_panel_data_endpoint_url: "http://{host}:{port of dc}/dashboard/leftPanel/data"
+  sftp_post_endpoint_url: "http://{host}:{port of dc}/public/api/v1/consumer/search/sftp/csv"
+  sftp_dc_data_endpoint_url: "http://{host}:{port of dc}/dashboard/sftp/dc/data"
+  sftp_dp1_data_endpoint_url: "http://{host}:{port of dp1}/dashboard/sftp/dp1/data"
+   # Add all respective sftp_dp1_data_endpoint_url endpoint of all dp example is above. 
+  dc_status_endpoint_url: "http://{host}:{port of dc}/private/api/v1/consumer/status/payload?transactionType=search&transactionId="
+  sftp_left_panel_url: "https://{domain of dc}/grafana/d-solo/aa62b4d5-f0c6-4c5d-97eb-753343c89a32/sftp-left-panel-data?orgId=1&refresh=5s&from=1705573550702&to=1705595150703&panelId=1"
+  sftp_right_panel_url: "https://{domain of dc}/grafana/d-solo/c319354b-d0a9-4541-ae9f-d052e31fa275/sftp-right-panel-data?orgId=1&refresh=5s&from=1705574488336&to=1705596088337&panelId=1"
+  sftp_bottom_panel_url: "https://{domain of dc}/grafana/d-solo/c63fe588-c69c-4918-bb96-97fba722afc8/sftp-bottom-panel-data?orgId=1&refresh=5s&from=1705574366440&to=1705595966440&panelId=1"
 # sftp connection configurations. 
 sftp:
   listener:
@@ -1749,6 +1590,15 @@ sftp:
     remote:
       # path of sftp client for inbound e.g. /inbound 
       inbound_directory: {path mentioned in sftp client for inbound}
+sunbird:
+  save:
+    response_data: http://{host}:{port of sunbird}/api/v1/Response_Data
+    response_tracker: http://{host}:{port of sunbird}/api/v1/Response_Tracker
+  enabled: true
+  elasticsearch:
+    host: {domain of elasticsearch like if running on local env i.e localhost} 
+    port: {port mention in docker-compose for elastic search}
+    scheme: http
 ````
 8. Add RegistryConfig.java class in config package 
 ````
@@ -1945,12 +1795,13 @@ public class DcController {}
     log.info("Payload received from postman");
     AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
     if (ObjectUtils.isNotEmpty(payloadMap)) {
-    acknowledgementDTO = dcRequestBuilderService.generateRequest(Collections.singletonList(payloadMap));
+    acknowledgementDTO = dcRequestBuilderService.generateRequest(Collections.singletonList(payloadMap),
+                    CoreConstants.SEND_PROTOCOL_HTTPS, "", "","");
     }
     return acknowledgementDTO;
     }
 ````
-15. To run above entrypoint refer below curl.
+14. To run above entrypoint refer below curl.
 ````
 curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 --header 'Content-Type: application/json' \
@@ -1963,7 +1814,7 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
 }'
 
 ````
-16. Create below entry point for triggering dc communication for multiple data using csv file.
+15. Create below entry point for triggering dc communication for multiple data using csv file.
 ````
  @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -1973,35 +1824,40 @@ curl --location 'http://localhost:8000/public/api/v1/consumer/search/payload' \
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/private/api/v1/consumer/search/csv")
     public AcknowledgementDTO createSearchRequestsFromCsv(@RequestPart(value = "file") MultipartFile payloadFile) throws Exception {
-        log.info("Payload received from csv file");
+     log.info("Payload received from csv file");
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         if (ObjectUtils.isNotEmpty(payloadFile)) {
             Path tempFile = Paths.get(System.getProperty("java.io.tmpdir"), "payload.csv");
+            if (Files.exists(tempFile)) {
+                commonUtils.deleteFolder(tempFile);
+            }
             Files.createFile(tempFile);
             payloadFile.transferTo(tempFile.toFile());
             acknowledgementDTO = dcRequestBuilderService.generateRequest(
-                    requestBuilderService.generatePayloadFromCsv(tempFile.toFile()), CoreConstants.SEND_PROTOCOL_HTTPS);
+                    requestBuilderService.generatePayloadFromCsv(tempFile.toFile()), CoreConstants.SEND_PROTOCOL_HTTPS,
+                    dcRequestBuilderService.demoTestEncryptionSignature(tempFile.toFile()),
+                    payloadFile.getName(), "");
             Files.delete(tempFile);
         }
         return acknowledgementDTO;
     }
 ````
-17. To run above entrypoint refer below curl and create one payload.csv with multiple data.
+16. To run above entrypoint refer below curl and create one payload.csv with multiple data.
 ````
 curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
 ````
-18. Create below endpoint for clearing db in dc.
+17. Create below endpoint for clearing db in dc.
 ````
  @GetMapping("/public/api/v1/registry/clear-db")
     public void clearDb() throws G2pHttpException, IOException {
-        commonUtils.handleToken();
+     commonUtils.handleToken();
         responseDataRepository.deleteAll();
         log.info("DC DB cleared");
 
-        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig("").entrySet()) {
             try {
-                Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(configEntryMap.getKey());
+                Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig("").get(configEntryMap.getKey());
                 String jwtToken = requestBuilderService.getValidatedToken(registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
                         registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
                         registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString());
@@ -2016,9 +1872,14 @@ curl --location 'localhost:8000/private/api/v1/consumer/search/csv' \
                 log.error("Exception in clearDb: ", e);
             }
         }
+        Set<String> keys = redisTemplate.keys("*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+        log.info("DC Redis cache cleared");
     }
 ````
-19. Add below exception handling in the DC controller.
+18. Add below exception handling in the DC controller.
 ````
 @ExceptionHandler(value = G2pcValidationException.class)
 @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -2069,9 +1930,10 @@ public class RegRecordFarmerDTO {
 ````
 public interface DcRequestBuilderService {
 
-    AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList, String protocol) throws Exception;
+   AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList, String protocol,
+                                       String isSignEncrypt, String payloadFilename, String inboundFilename) throws Exception;
 
-    AcknowledgementDTO generateStatusRequest(String transactionID, String transactionType,String protocol) throws Exception;
+    AcknowledgementDTO generateStatusRequest(String transactionID, String transactionType, String protocol) throws Exception;
 }
 ````
 21. Create DcRequestBuilderServiceImpl.java class and implement it from DcRequestBuilderService interface.
@@ -2093,6 +1955,12 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
 
     @Autowired
     private ResourceLoader resourceLoader;
+
+    @Autowired
+    ResponseTrackerRepository responseTrackerRepository;
+
+    @Autowired
+    private ElasticsearchService elasticsearchService;
 ````
 23. Override below method generateRequest() from interface.
     1. Fetch queryMapList using payload list provided and registryconfig.
@@ -2198,21 +2066,22 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     1. Values added in this class are inbound and outbound file path mentioned in application.yml.
     2. handleMessageInbound() method written to handle inbound message.
 ````
-package g2pc.ref.dc.client.controller.sftp;
+package g2pc.ref.farmer.regsvc.controller.sftp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.constants.CoreConstants;
-import g2pc.core.lib.dto.common.AcknowledgementDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.search.message.request.ResponseMessageDTO;
-import g2pc.core.lib.dto.search.message.response.ResponseDTO;
-import g2pc.dc.core.lib.service.RequestBuilderService;
-import g2pc.ref.dc.client.service.DcRequestBuilderService;
-import g2pc.ref.dc.client.service.DcResponseHandlerService;
-import g2pc.ref.dc.client.service.DcValidationService;
+import g2pc.core.lib.dto.search.message.request.RequestDTO;
+import g2pc.core.lib.dto.search.message.request.RequestMessageDTO;
+import g2pc.core.lib.exceptions.G2pcValidationException;
+import g2pc.dp.core.lib.service.RequestHandlerService;
+import g2pc.ref.farmer.regsvc.constants.Constants;
+import g2pc.ref.farmer.regsvc.dto.SftpDpData;
+import g2pc.ref.farmer.regsvc.service.DpSftpPushUpdateService;
+import g2pc.ref.farmer.regsvc.service.FarmerValidationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2235,64 +2104,50 @@ public class DcSftpListener {
     @Value("${sftp.listener.local.inbound_directory}")
     private String sftpLocalDirectoryInbound;
 
-    @Value("${sftp.listener.local.outbound_directory}")
-    private String sftpLocalDirectoryOutbound;
 
     @Autowired
-    private DcRequestBuilderService dcRequestBuilderService;
+    private RequestHandlerService requestHandlerService;
 
     @Autowired
-    private RequestBuilderService requestBuilderService;
+    FarmerValidationService farmerValidationService;
 
-    @Autowired
-    private DcResponseHandlerService dcResponseHandlerService;
-
-    @Autowired
-    DcValidationService dcValidationService;
-
+    @SuppressWarnings("unchecked")
     @ServiceActivator(inputChannel = "sftpInbound")
     public void handleMessageInbound(Message<File> message) {
         try {
             File file = message.getPayload();
-            log.info("Received Message from inbound directory: {}", file.getName());
-            if (ObjectUtils.isNotEmpty(file)) {
-                AcknowledgementDTO acknowledgementDTO = dcRequestBuilderService.generateRequest(
-                        requestBuilderService.generatePayloadFromCsv(file), CoreConstants.SEND_PROTOCOL_SFTP);
-                log.info("AcknowledgementDTO: {}", acknowledgementDTO);
+            log.info("Received Message from inbound directory of dp-1: {}", file.getName());
+            if (ObjectUtils.isNotEmpty(file) && file.getName().contains(".json")) {
+                String requestString = new String(Files.readAllBytes(file.toPath()));
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.registerSubtypes(RequestHeaderDTO.class,
+                        ResponseHeaderDTO.class, HeaderDTO.class);
+
+                RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).
+                        readValue(requestString);
+                RequestMessageDTO messageDTO;
+
+                Map<String, Object> metaData = (Map<String, Object>) requestDTO.getHeader().getMeta().getData();
+
+                messageDTO = farmerValidationService.signatureValidation(metaData, requestDTO);
+                requestDTO.setMessage(messageDTO);
+                String cacheKey = Constants.CACHE_KEY_STRING + messageDTO.getTransactionId();
+                try {
+                    farmerValidationService.validateRequestDTO(requestDTO);
+                    requestHandlerService.buildCacheRequest(
+                            objectMapper.writeValueAsString(requestDTO), cacheKey, CoreConstants.SEND_PROTOCOL_SFTP);
+                } catch (G2pcValidationException e) {
+                    throw new G2pcValidationException(e.getG2PcErrorList());
+                } catch (JsonProcessingException e) {
+                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+                } catch (Exception e) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+                }
             }
             Files.deleteIfExists(Path.of(sftpLocalDirectoryInbound + "/" + file.getName()));
         } catch (Exception e) {
             log.error("Error: ", e);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    @ServiceActivator(inputChannel = "sftpOutbound")
-    public void handleMessageOutbound(Message<File> message) throws Exception {
-        File file = message.getPayload();
-        log.info("Received Message from outbound directory: {}", file.getName());
-        String responseString = new String(Files.readAllBytes(file.toPath()));
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerSubtypes(RequestHeaderDTO.class,
-                ResponseHeaderDTO.class, HeaderDTO.class);
-        ResponseDTO responseDTO = objectMapper.readerFor(ResponseDTO.class).
-                readValue(responseString);
-        ResponseMessageDTO messageDTO;
-        Map<String, Object> metaData = (Map<String, Object>) responseDTO.getHeader().getMeta().getData();
-        messageDTO = dcValidationService.signatureValidation(metaData, responseDTO);
-        responseDTO.setMessage(messageDTO);
-        try {
-            dcValidationService.validateResponseDto(responseDTO);
-            if (ObjectUtils.isNotEmpty(responseDTO)) {
-                dcResponseHandlerService.getResponse(responseDTO);
-            }
-            log.info("on search response handled successfully");
-        } catch (JsonProcessingException | IllegalArgumentException e) {
-            log.info("on search response handled error : ", e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-        Files.deleteIfExists(Path.of(sftpLocalDirectoryOutbound + "/" + file.getName()));
     }
 
     @ServiceActivator(inputChannel = "errorChannel")
@@ -2301,6 +2156,7 @@ public class DcSftpListener {
         log.error("Handling ERROR: {}", error.getMessage());
     }
 }
+
 ````
 25. Create on-search endpoint , refer below snippet ,there are methods called in this methods refer code after this point.
 ````
@@ -2353,7 +2209,7 @@ public class DcCommonUtils {
 }
 
 ````
-26. Add below values from application.yml to validate token
+27. Add below values from application.yml to validate token
 ````
   @Autowired
     G2pTokenService g2pTokenService;
@@ -2388,10 +2244,32 @@ public class DcCommonUtils {
     @Value("${keycloak.dc.password}")
     private String adminPassword;
 
-    
+    @Value("${sftp.listener.host}")
+    private String sftpDcHost;
+
+    @Value("${sftp.listener.port}")
+    private int sftpDcPort;
+
+    @Value("${sftp.listener.user}")
+    private String sftpDcUser;
+
+    @Value("${sftp.listener.password}")
+    private String sftpDcPassword;
+
+    @Value("${sftp.listener.remote.inbound_directory}")
+    private String sftpDcRemoteInboundDirectory;
+
+    @Value("${sftp.listener.remote.outbound_directory}")
+    private String sftpDcRemoteOutboundDirectory;
+
+    @Value("${sftp.listener.local.inbound_directory}")
+    private String sftpDcLocalInboundDirectory;
+
+    @Value("${sftp.listener.local.outbound_directory}")
+    private String sftpDcLocalOutboundDirectory;
 
 ````
-27. Add below methods in DcCommonUtils.java to handle and validate token and to get sftp configuration for dc.
+28. Add below methods in DcCommonUtils.java to handle and validate token and to get sftp configuration for dc.
 ````
     public void handleToken() throws G2pHttpException, JsonProcessingException {
         String token = BearerTokenUtil.getBearerTokenHeader();
@@ -2400,8 +2278,8 @@ public class DcCommonUtils {
         if (introspectResponse.getStatusCode().value() == 401) {
             throw new G2pHttpException(new G2pcError(introspectResponse.getStatusCode().toString(), introspectResponse.getBody()));
         }
-        if (!g2pTokenService.validateToken(masterUrl, getClientUrl, g2pTokenService.decodeToken(token), masterClientId, masterClientSecret, adminUsername, adminPassword)) {
-            
+        if (!g2pTokenService.validateToken(masterUrl, getClientUrl, g2pTokenService.decodeToken(token),
+                masterClientId, masterClientSecret, adminUsername, adminPassword)) {
             throw new G2pHttpException(new G2pcError(ExceptionsENUM.ERROR_USER_UNAUTHORIZED.toValue(), "User is not authorized"));
         }
     }
@@ -2435,25 +2313,27 @@ public class DcCommonUtils {
         }
     }
 ````
-28. Create DcValidationService interface with 3 methods , validateRegRecords() this method is dc specific , to validate query params.
+29. Create DcValidationService interface with 3 methods , validateRegRecords() this method is dc specific , to validate query params.
 ````
 @Service
 public interface DcValidationService {
 
     public void validateResponseDto(ResponseDTO responseDTO) throws Exception;
 
-    public void validateRegRecords(ResponseMessageDTO messageDTO) throws G2pcValidationException, IOException;
-
     ResponseMessageDTO signatureValidation(Map<String, Object> metaData, ResponseDTO responseDTO) throws Exception;
+
+    StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception;
+
+    void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException;
 }
 ````
-29. Create DcValidationServiceImpl class to implement DcValidationService interface and override method.
+30. Create DcValidationServiceImpl class to implement DcValidationService interface and override method.
 ````
 @Service
 @Slf4j
 public class DcValidationServiceImpl implements DcValidationService {
 ````
-30. Add below autowired beans in DcValidationServiceImpl. Add below values for all required dps.
+31. Add below autowired beans in DcValidationServiceImpl. Add below values for all required dps.
 ````
     @Autowired
     ResponseHandlerService responseHandlerService;
@@ -2483,7 +2363,7 @@ public class DcValidationServiceImpl implements DcValidationService {
     @Value("${crypto.from_dp_farmer.id}")
     private String farmerID;
 ````
-31. Override below signatureValidation() method and add required if conditions for required dps.
+32. Override below signatureValidation() method and add required if conditions for required dps.
     1. Check get string from CoreConstants.DP_ID for respective farmer ids , and add respective attributes.
     2. Check isSign flag , if yes check metadata given from controller is true or false , if not true throw error that configurations are not valid.
     2. Take farmerKeyPath for dp .p12 file.
@@ -2606,7 +2486,7 @@ public class DcValidationServiceImpl implements DcValidationService {
         return messageDTO;
     }
 ````
-32. Override validateResponse() to validate ResponseDTO
+33. Override validateResponse() to validate ResponseDTO
 ````
  @Override
     public void validateResponseDto(ResponseDTO responseDTO) throws Exception {
@@ -2622,14 +2502,14 @@ public class DcValidationServiceImpl implements DcValidationService {
         responseHandlerService.validateResponseMessage(messageDTO);
     }
 ````
-33. Create DcResponseHandlerService interface to handle the response
+34. Create DcResponseHandlerService interface to handle the response
 ````
 public interface DcResponseHandlerService {
 
     AcknowledgementDTO getResponse(ResponseDTO responseDTO) throws JsonProcessingException;
 }
 ````
-34. Create DcResponseHandlerServiceImpl class which implements DcResponseHandlerService interface 
+35. Create DcResponseHandlerServiceImpl class which implements DcResponseHandlerService interface 
 ````
 @Service
 @Slf4j
@@ -2640,18 +2520,28 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
 
     @Override
     public AcknowledgementDTO getResponse(ResponseDTO responseDTO) throws JsonProcessingException {
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+      AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        txnTrackerService.updateTransactionDbAndCache(responseDTO);
+       G2pcError g2pcError = txnTrackerService.updateTransactionDbAndCache(responseDTO, outboundFilename);
         log.info("on-search response received from registry : {}", objectMapper.writeValueAsString(responseDTO));
-        acknowledgementDTO.setMessage(Constants.ON_SEARCH_RESPONSE_RECEIVED.toString());
-        acknowledgementDTO.setStatus(Constants.COMPLETED);
+        log.info("on-search database updation response from sunbird - "+g2pcError.getCode());
+        if (g2pcError.getCode().equals(HttpStatus.OK.toString())){
+            acknowledgementDTO.setMessage(Constants.ON_SEARCH_RESPONSE_RECEIVED.toString());
+            acknowledgementDTO.setStatus(Constants.COMPLETED);
+
+        } else {
+            acknowledgementDTO.setMessage(Constants.INVALID_RESPONSE.toString());
+            acknowledgementDTO.setStatus(Constants.PENDING);
+            throw  new G2pHttpException(g2pcError);
+
+        }
+
         return acknowledgementDTO;
     }
 }
 ````
-35. Create new entrypoint method for /status. 
+36. Create new entrypoint method for /status. 
 ````
  @Operation(summary = "Receive consumer search request")
     @ApiResponses(value = {
@@ -2669,17 +2559,17 @@ public class DcResponseHandlerServiceImpl implements DcResponseHandlerService {
         return acknowledgementDTO;
     }
 ````
-Refer below curl to execute above entrypoint. In which you can see we are sending transactionId for which we wanted to know status and action/transactionType for which we are searching status.
+37. Refer below curl to execute above entrypoint. In which you can see we are sending transactionId for which we wanted to know status and action/transactionType for which we are searching status.
 ````
 curl --location \
  --request \
  POST 'localhost:8000/private/api/v1/consumer/status/payload?transactionId=T757-5372-9253-9725-4673&transactionType=search'
 ````
-36. Declare below method in DcRequestBuilderService interface to generate request for /status endpoint. 
+38. Declare below method in DcRequestBuilderService interface to generate request for /status endpoint. 
 ````
  AcknowledgementDTO generateStatusRequest(String transactionID,String transactionType) throws Exception;
 ````
-37. Override the above method in DcRequestBuilderServiceImpl class.
+39. Override the above method in DcRequestBuilderServiceImpl class.
     1. Generate unique transaction id for status transaction. 
     2. Find registryType from response_tracker and response using transactionId given from postman.
     3. Fetch registry specific map from registryConfig class , as it returns values specified for registry like url and credentials.
@@ -2693,43 +2583,55 @@ curl --location \
 ````
  @Override
     public AcknowledgementDTO generateStatusRequest(String transactionID,String transactionType) throws Exception {
-        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
-        String statusRequestTransactionId= CommonUtils.generateUniqueId("T");
-        Optional<ResponseTrackerEntity> responseTrackerEntityOptional = responseTrackerRepository.findByTransactionId(transactionID);
-        ResponseTrackerEntity responseTrackerEntity = responseTrackerEntityOptional.get();
-        String registryType = responseTrackerEntity.getRegistryType().substring(3).toLowerCase();
-        Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(registryType);
-        TxnStatusRequestDTO txnStatusRequestDTO = requestBuilderService.buildTransactionRequest(transactionID,transactionType);
-        String statusRequestString = requestBuilderService.buildStatusRequest(txnStatusRequestDTO,statusRequestTransactionId , ActionsENUM.STATUS);
-        G2pcError g2pcError = null;
-        try {
-            Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
-            String encryptedSalt = "";
-            InputStream fis = resource.getInputStream();
-            g2pcError = requestBuilderService.sendRequest(statusRequestString,
-                    registrySpecificConfigMap.get(CoreConstants.DP_STATUS_URL).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
-                    registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
-                    Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
-                    Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
-                    fis, encryptedSalt,
-                    registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(),CoreConstants.DP_STATUS_URL);
-            log.info(""+g2pcError);
-                   } catch (Exception e) {
-            log.error("Exception in generateRequest : ", e);
-        }
-        txnTrackerService.saveInitialStatusTransaction(transactionType , statusRequestTransactionId, HeaderStatusENUM.RCVD.toValue());
-        txnTrackerService.saveRequestTransaction(statusRequestString,
-                registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), statusRequestTransactionId);
-         txnTrackerService.saveRequestInStatusDB(statusRequestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
-        acknowledgementDTO.setMessage(g2pcError);
-        acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+       AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        String statusRequestTransactionId = CommonUtils.generateUniqueId("T");
+        ObjectMapper objectMapper = new ObjectMapper();
+        String encryptedSalt = "";
+        Map<String, String> fieldValues = new HashMap<>();
+        fieldValues.put("transaction_id.keyword",transactionID);
+        SearchResponse responseTrackerSearchResponse = elasticsearchService.exactSearch("response_tracker", fieldValues);
+        if (responseTrackerSearchResponse.getHits().getHits().length > 0) {
 
-        return  acknowledgementDTO;
+            String responseTrackerDtoString = responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString();
+            ResponseTrackerDto responseTrackerDto  = objectMapper.readerFor(ResponseTrackerDto.class).
+                    readValue(responseTrackerDtoString);
+            String registryType = responseTrackerDto.getRegistryType().substring(3).toLowerCase();
+            Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig("").get(registryType);
+            TxnStatusRequestDTO txnStatusRequestDTO = requestBuilderService.buildTransactionRequest(transactionID, transactionType);
+            String statusRequestString = requestBuilderService.buildStatusRequest(txnStatusRequestDTO, statusRequestTransactionId, ActionsENUM.STATUS);
+            G2pcError g2pcError = null;
+            try {
+                Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+                InputStream fis = resource.getInputStream();
+                g2pcError = requestBuilderService.sendRequest(statusRequestString,
+                        registrySpecificConfigMap.get(CoreConstants.DP_STATUS_URL).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
+                        registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                        Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                        fis, encryptedSalt,
+                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), "status");
+                log.info("" + g2pcError);
+            } catch (Exception e) {
+                log.error(Constants.GENERATE_REQUEST_ERROR_MESSAGE, e);
+            }
+            txnTrackerService.saveInitialStatusTransaction(transactionType, statusRequestTransactionId, HeaderStatusENUM.RCVD.toValue(), protocol);
+            txnTrackerService.saveRequestTransaction(statusRequestString,
+                    registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), statusRequestTransactionId, protocol);
+            txnTrackerService.saveRequestInStatusDB(statusRequestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+            acknowledgementDTO.setMessage(g2pcError);
+            acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+        } else {
+            G2pcError g2pcError = new G2pcError();
+            g2pcError.setCode(ExceptionsENUM.ERROR_REQUEST_NOT_FOUND.toValue());
+            g2pcError.setMessage("Data for transaction id " + transactionID + "is not found");
+            acknowledgementDTO.setMessage(g2pcError);
+        }
+        return acknowledgementDTO;
     }
 ````
-38. Define the below method in DcController to create /on-status endpoint which will get call from dp side.
+40. Define the below method in DcController to create /on-status endpoint which will get call from dp side.
     1. call commonUtils.handleToken() method to authenticate user.
     2. Declare objectMapper and add neccessary dependencies.
     3. Get statusResponseDto by converting string to object using objectMapper.
@@ -2746,7 +2648,7 @@ curl --location \
             @ApiResponse(responseCode = "500", description = Constants.CONFLICT)})
     @PostMapping("/private/api/v1/registry/on-status")
     public AcknowledgementDTO handleOnStatusResponse(@RequestBody String responseString) throws Exception {
-        commonUtils.handleToken();
+         commonUtils.handleToken();
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class,
@@ -2768,13 +2670,13 @@ curl --location \
         return acknowledgementDTO;
     }
 ````
-39. Add below 2 methods in DcValidationService for signatureValidation of statusResponseMessageDto and validate statusResponseDto.
+41. Add below 2 methods in DcValidationService for signatureValidation of statusResponseMessageDto and validate statusResponseDto.
 ````
     StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception;
 
     void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException;
 ````
-40. Override signatureValidation() method in DcValidationServiveImpl.
+42. Override signatureValidation() method in DcValidationServiveImpl.
 ````
 @Override
     public StatusResponseMessageDTO signatureValidation(Map<String, Object> metaData, StatusResponseDTO statusResponseDTO) throws Exception {
@@ -2888,7 +2790,7 @@ curl --location \
         return messageDTO;
     }
 ````
-41. Override validateStatusResponseDTO() method in DcValidationServiceImpl.
+43. Override validateStatusResponseDTO() method in DcValidationServiceImpl.
 ````
 @Override
     public void validateStatusResponseDTO(StatusResponseDTO statusResponseDTO) throws IOException, G2pcValidationException {
@@ -2903,33 +2805,42 @@ curl --location \
         responseHandlerService.validateStatusResponseMessage(statusResponseMessageDTO);
     }
 ````
-42. Add below method in DcResponseHandlerService interface.
+44. Add below method in DcResponseHandlerService interface.
 ````
 AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException;
 
 ````
-43. Override above method in DcResponseHandlerServiceImpl class.
+45. Override above method in DcResponseHandlerServiceImpl class.
 ````
 @Override
     public AcknowledgementDTO getStatusResponse(StatusResponseDTO statusResponseDTO) throws JsonProcessingException {
         AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        txnTrackerService.updateStatusTransactionDbAndCache(statusResponseDTO);
+        G2pcError g2pcError = txnTrackerService.updateStatusTransactionDbAndCache(statusResponseDTO);
         log.info("on-status response received from registry : {}", objectMapper.writeValueAsString(statusResponseDTO));
-        acknowledgementDTO.setMessage(Constants.ON_SEARCH_RESPONSE_RECEIVED.toString());
-        acknowledgementDTO.setStatus(Constants.COMPLETED);
+        log.info("on-status database updation response from sunbird - "+g2pcError.getCode());
+        if (g2pcError.getCode().equals(HttpStatus.OK.toString())){
+            acknowledgementDTO.setMessage(Constants.ON_STATUS_RESPONSE_RECEIVED.toString());
+            acknowledgementDTO.setStatus(Constants.COMPLETED);
+
+        } else {
+            acknowledgementDTO.setMessage(Constants.INVALID_RESPONSE.toString());
+            acknowledgementDTO.setStatus(Constants.PENDING);
+            throw  new G2pHttpException(g2pcError);
+
+        }
         return acknowledgementDTO;
     }
 ````
-43. Create DcDashboardController.java for creating endpoints for dashboard of Grafana.
+46. Create DcDashboardController.java for creating endpoints for dashboard of Grafana.
 ````
 @Controller
 @Slf4j
 public class DcDashboardController { 
 }
 ````
-43. Add below configuration values which added in application.yml
+47. Add below configuration values which added in application.yml
 ````
   @Value("${dashboard.left_panel_url}")
     private String leftPanelUrl;
@@ -2985,19 +2896,20 @@ public class DcDashboardController {
     @Autowired
     private RequestBuilderService requestBuilderService;
 ````
-44. Create below endpoint method 
+48. Create below endpoint method 
 ````
 @GetMapping("/dashboard")
     public String showDashboardPage(Model model) throws IOException, ParseException {
-        String jwtToken = requestBuilderService.getValidatedToken(dcKeyCloakUrl, dcClientId, dcClientSecret);
-
+      String jwtToken = requestBuilderService.getValidatedToken(dcKeyCloakUrl, dcClientId, dcClientSecret);
         model.addAttribute("left_panel_url", leftPanelUrl);
         model.addAttribute("right_panel_url", rightPanelUrl);
         model.addAttribute("bottom_panel_url", bottomPanelUrl);
-        model.addAttribute("post_endpoint_url", postEndpointUrl);
+        model.addAttribute("post_https_endpoint_url", postHttpsEndpointUrl);
         model.addAttribute("clear_dc_db_endpoint_url", clearDcDbEndpointUrl);
         model.addAttribute("jwtToken", jwtToken);
-        return "dashboard";
+        model.addAttribute("left_panel_data_endpoint_url", leftPanelDataEndpointUrl);
+        model.addAttribute("dc_status_endpoint_url", dcStatusEndpointUrl);
+        return "dashboardHttps";
     }
      @GetMapping("/dashboard/sftp")
     public String showDashboardSftpPage(Model model) throws IOException, ParseException {
@@ -3024,7 +2936,7 @@ public class DcDashboardController {
     }
 ````
 
-45. Create method createStatusRequestSftp() for creating endpoint to listen to CSV file payload to handle using SFTP in DcController.
+49. Create method createStatusRequestSftp() for creating endpoint to listen to CSV file payload to handle using SFTP in DcController.
 ````
  @Operation(summary = "Listen to CSV file payload to handle using SFTP")
     @ApiResponses(value = {
@@ -3062,12 +2974,12 @@ public class DcDashboardController {
         return acknowledgementDTO;
     }
 ````
-47. Import below curl to run the endpoint and add payload.csv
+50. Import below curl to run the endpoint and add payload.csv
 ````
 curl --location 'localhost:8000/public/api/v1/consumer/search/sftp/csv' \
 --form 'file=@"/home/ttpl-rt-119/Downloads/payload.csv"'
 ````
-48. Add below 2 methods in DcController.
+51. Add below 2 methods in DcController.
 ````
     @GetMapping("/dashboard/leftPanel/data")
     public List<HttpsLeftPanelDataDTO> fetchLeftPanelData() {
@@ -3093,15 +3005,19 @@ curl --location 'localhost:8000/public/api/v1/consumer/search/sftp/csv' \
         return dcSftpPushUpdateService.register();
     }
 ````
-49. Add interface DcSftpPushUpdateService in service class. 
+52. Add interface DcSftpPushUpdateService in service class. 
 ````
 package g2pc.ref.dc.client.service;
 
 public interface DcSftpPushUpdateService {   
+    SseEmitter register();
+
+    void pushUpdate(Object update);
+
 
 }
 ````
-50. Implement DcSftpPushUpdateServiceImpl from DcSftpPushUpdateService , refer below code.
+53. Implement DcSftpPushUpdateServiceImpl from DcSftpPushUpdateService , refer below code.
 ````
 @Service
 @Slf4j
@@ -3138,7 +3054,7 @@ public class DcSftpPushUpdateServiceImpl implements DcSftpPushUpdateService {
     }
 }
 ````
-51. Add dto HttpsLeftPanelDataDTO in package g2pc.ref.dc.client.dto.dashboard
+54. Add dto HttpsLeftPanelDataDTO in package g2pc.ref.dc.client.dto.dashboard
 ````
 @Data
 @AllArgsConstructor
@@ -3150,7 +3066,7 @@ public class HttpsLeftPanelDataDTO {
     private String status;
 }
 ````
-52. Add SftpDcData dto in package g2pc.ref.dc.client.dto.dashboard
+55. Add SftpDcData dto in package g2pc.ref.dc.client.dto.dashboard
 ````
 @Data
 @AllArgsConstructor
@@ -3162,8 +3078,7 @@ public class SftpDcData {
     private String fileName;
     private String sftpDirectoryType;
 }
-````
-53. 
+```` 
 
 # 8. Keycloak configuration
 ### Steps for DC and DP -
@@ -3229,90 +3144,98 @@ services:
    ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/filezilla-site-create.png)
    3. Create folder structure shown below.
    ![Alt text](/home/ttpl-rt-119/Documents/CDPI/G2P-Code/Git_hub/g2pc-registry/docs/src/images/filezila-folder.png)
-   4. 
+   
 
 
 # Sunbird Rc Integration
 ### Below are the steps to install sunbird rc in local host.
-1. Take registries.zip from this path.
-2. Open the terminal in the folder where docker-compose.yml is there. 
-3. Navigate to the directory containing the Sunbird-RC registries code:
+1. Refer below docker-compose.yml file. Change password and host name ad per instruction given in below file. 
 ````
-cd ~/Documents/CDPI/Sunbird-RC/registries
+version: '2.4'
+
+services:
+  db:
+    image: postgres
+    container_name: {Add container name of db}
+    restart: unless-stopped
+    ports:
+      - '{Add port}:5432'
+    environment:
+      - POSTGRES_DB={Add DB name}
+      - POSTGRES_USER={Add user name}
+      - POSTGRES_PASSWORD={Add password}
+  es:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: {Add container name of es}
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'localhost:9200/_cluster/health']
+      interval: 30s
+      timeout: 10s
+      retries: 4
+    ports:
+      - '{Add port}:9200'
+      - '{Add port}:9300'
+
+  rg:
+    image: dockerhub/sunbird-rc-core:v0.0.8
+    container_name: {Add container name of sunbird rc}
+    restart: unless-stopped
+    volumes:
+      - /home/{Add machine hostname}/sunbirdrc/config/schemas:/home/sunbirdrc/config/public/_schemas
+    environment:
+      - connectionInfo_uri=jdbc:postgresql://db:5432/registry
+      - connectionInfo_username={Add username of connection of db}
+      - connectionInfo_password={Add password of connection of db}
+      - elastic_search_connection_url=es:{Add port like 9201}
+      - search_provider=dev.sunbirdrc.registry.service.ElasticSearchService
+      - search_providerName=dev.sunbirdrc.registry.service.ElasticSearchService
+      - signature_enabled=false
+      - authentication_enabled=false
+    ports:
+      - '{Add port to run registry like 8080,8081}:8081'
+    depends_on:
+      - db
+      - es
 ````
-4. Recreate and start the Elasticsearch container:
+2. Create folder structure mentioned below. 
+````
+/home/{Add machine hostname}/sunbirdrc/config/schemas
+````
+3. 
+4. Open the terminal in the folder where docker-compose.yml is there.
+5. Recreate and start the Elasticsearch container:
 ````
 sudo docker-compose up -d --no-deps --force-recreate es
 ````
 This command rebuilds and recreates the Elasticsearch container (g2pc-es-1), excluding its dependencies.
 It ensures that the container starts with a fresh configuration.
-5. Recreate and start the database container:
+6. create and start the database container:
 ````
 sudo docker-compose up -d --no-deps --force-recreate db
 ````
 This command rebuilds and recreates the database container (g2pc-db-1), excluding its dependencies.
 It ensures that the container starts with a fresh configuration.
-6. Recreate and start the Sunbird-RC registry container:
+7. Recreate and start the Sunbird-RC registry container:
 ````
 sudo docker-compose up -d --no-deps --force-recreate rg
 ````
 This command rebuilds and recreates the Sunbird-RC registry container (g2pc-rg-1), excluding its dependencies.
 It ensures that the container starts with a fresh configuration.
-7. Check the running containers:
+8. Check the running containers and Verify that the containers are up and running.
 ````
 sudo docker ps
 ````
-Verify that the containers (g2pc-db-1, g2pc-es-1, and g2pc-rg-1) are up and running.
-8. Adjust paths and container names accordingly based on your specific setup and configurations. 
-9. These commands use Docker Compose to manage and orchestrate the containers. 
-10. The --no-deps flag ensures that only the specified service is recreated without starting its dependencies. 
-11. The --force-recreate flag ensures the recreation of the container even if it is already running.
-12. Create schema in config/schemas folder. Refer below schema script. Create schemas as per your requirement
+9. Adjust paths and container names accordingly based on your specific setup and configurations. 
+10. These commands use Docker Compose to manage and orchestrate the containers. 
+11. The --no-deps flag ensures that only the specified service is recreated without starting its dependencies. 
+12. The --force-recreate flag ensures the recreation of the container even if it is already running.
+13. Use below command to restart the registry.
 ````
-{
-  "$schema": "http://json-schema.org/draft-07/schema",
-  "type": "object",
-  "title": "Farmer",
-  "properties": {
-    "Farmer": {
-      "$ref": "#/definitions/Farmer"
-    }
-  },
-  "required": [
-    "Farmer"
-  ],
-  "definitions": {
-    "Farmer": {
-      "$id": "#/properties/Farmer",
-      "type": "object",
-      "title": "The Farmer Schema",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "farmer_id": {
-          "type": "string"
-        },
-        "farmer_name": {
-          "type": "string"
-        },
-        "season": {
-          "type": "string"
-        },
-        "payment_status": {
-          "type": "string"
-        },
-        "payment_date": {
-          "type": "string"
-        },
-        "payment_amount": {
-          "type": "string"
-        }
-      }
-    }
-  }
-}
-
+ sudo docker restart {container-name}
 ````
   
 
