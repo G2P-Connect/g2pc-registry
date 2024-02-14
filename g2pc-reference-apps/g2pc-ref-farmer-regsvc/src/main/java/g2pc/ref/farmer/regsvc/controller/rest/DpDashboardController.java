@@ -16,4 +16,6 @@ public class DpDashboardController {
         model.addAttribute("dp_dashboard_url", dpDashboardUrl);
         return "dashboard";
     }
+
+
 }

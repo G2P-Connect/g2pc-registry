@@ -3,7 +3,7 @@ package g2pc.ref.mno.regsvc.serviceimpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.config.G2pUnirestHelper;
-import g2pc.core.lib.dto.common.message.request.QueryDTO;
+import g2pc.core.lib.dto.search.message.request.QueryDTO;
 import g2pc.ref.mno.regsvc.dto.response.RegRecordMobileDTO;
 import g2pc.ref.mno.regsvc.service.MobileResponseBuilderService;
 import kong.unirest.HttpResponse;
@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +34,10 @@ public class MobileResponseBuilderServiceImpl implements MobileResponseBuilderSe
     @Override
     public List<String> getRegMobileRecords(List<QueryDTO> queryDTOList) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
+        log.info("getRegMobileRecords : {}", objectMapper.writeValueAsString(queryDTOList));
         List<String> regMnoRecordsList = new ArrayList<>();
         String uri = mobileInfoURL;
+        log.info("mobileInfoURL : {}", uri);
         HttpResponse<String> response = g2pUnirestHelper.g2pPost(uri)
                 .body(objectMapper.writeValueAsString(queryDTOList))
                 .asString();
