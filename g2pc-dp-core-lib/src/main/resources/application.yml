@@ -1,0 +1,111 @@
+
+spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: not_set
+    username: not_set
+    password: not_set
+    hikari:
+      data-source-properties:
+        stringtype: unspecified
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+        useLocalSessionState: true
+        rewriteBatchedStatements: true
+        cacheResultSetMetadata: true
+        cacheServerConfiguration: true
+        maintainTimeStats: false
+        maximum-pool-size: 5
+        connection-timeout: 5000
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate.ddl-auto: none
+    show-sql: false
+    open-in-view: false
+    generate-ddl: false
+
+spring.data.redis:
+  repositories.enabled: false
+  host: not_set
+  password: not_set
+  port: not_set
+
+crypto:
+  to_dc:
+    support_encryption: true
+    support_signature: true
+    password: not_set
+    key_path: not_set
+    id: not_set
+  from_dc:
+    support_encryption: true
+    support_signature: true
+    password: not_set
+    key_path: not_set
+
+client:
+  api_urls:
+    client_search_api: not_set
+    client_status_api: not_set
+
+keycloak:
+  from_dc:
+    url: not_set
+    clientId: not_set
+    clientSecret: not_set
+  dp:
+    url: not_set
+    username: not_set
+    password: not_set
+    master:
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
+    client:
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
+
+sftp:
+  listener:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+    local:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+  dc:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      outbound_directory: not_set
+
+
+sunbird:
+  api_urls:
+    response_data_api: not_set
+    response_tracker_api: not_set
+  enabled: not_set
+  elasticsearch:
+    host: not_set
+    port: not_set
+    scheme: not_set
