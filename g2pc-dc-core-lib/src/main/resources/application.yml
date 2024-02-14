@@ -4,9 +4,9 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dc1?currentSchema=g2pc
-    username: postgres
-    password: K6tnrCU0wqXOwPW
+    url: not_set
+    username: not_set
+    password: not_set
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -41,39 +41,39 @@ spring.data.redis:
 
 sftp:
   listener:
-    host: localhost
-    port: 2224
-    user: cdpi
-    password: 1234
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
     remote:
-      inbound_directory: /inbound
-      outbound_directory: /outbound
+      inbound_directory: not_set
+      outbound_directory: not_set
     local:
-      inbound_directory: /home/prihir/g2pc/dc/inbound
-      outbound_directory: /home/prihir/g2pc/dc/outbound
+      inbound_directory: not_set
+      outbound_directory: not_set
 
   dp1:
-    host: localhost
-    port: 2225
-    user: cdpi
-    password: 1234
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
     remote:
-      inbound_directory: /inbound
+      inbound_directory: not_set
 
   dp2:
-    host: localhost
-    port: 2226
-    user: cdpi
-    password: 1234
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
     remote:
-      inbound_directory: /inbound
+      inbound_directory: not_set
 
 sunbird:
   api_urls:
-    response_data_api: http://3.109.26.38:8083/api/v1/Response_Data
-    response_tracker_api: http://3.109.26.38:8083/api/v1/Response_Tracker
+    response_data_api: not_set
+    response_tracker_api: not_set
   enabled: false
   elasticsearch:
-    host: 3.109.26.38
-    port: 9200
-    scheme: http
+    host: not_set
+    port: not_set
+    scheme: not_set
