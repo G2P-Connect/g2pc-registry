@@ -5,13 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.QueryDTO;
-import g2pc.core.lib.dto.common.message.request.RequestDTO;
-import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
-import g2pc.core.lib.dto.common.message.request.SearchRequestDTO;
-import g2pc.core.lib.dto.common.message.response.DataDTO;
-import g2pc.core.lib.dto.common.message.response.ResponsePaginationDTO;
-import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
+import g2pc.core.lib.dto.search.message.request.RequestDTO;
+import g2pc.core.lib.dto.search.message.request.RequestMessageDTO;
+import g2pc.core.lib.dto.search.message.request.ResponseMessageDTO;
+import g2pc.core.lib.dto.search.message.request.SearchRequestDTO;
+import g2pc.core.lib.dto.search.message.response.DataDTO;
+import g2pc.core.lib.dto.search.message.response.ResponsePaginationDTO;
+import g2pc.core.lib.dto.search.message.response.SearchResponseDTO;
+import g2pc.core.lib.dto.status.message.request.StatusRequestDTO;
+import g2pc.core.lib.dto.status.message.request.StatusRequestMessageDTO;
+import g2pc.core.lib.dto.status.message.request.TxnStatusRequestDTO;
 import g2pc.core.lib.enums.HeaderStatusENUM;
 import g2pc.core.lib.enums.LocalesENUM;
 import g2pc.core.lib.enums.QueryTypeEnum;
@@ -20,6 +23,7 @@ import g2pc.dp.core.lib.constants.DpConstants;
 import g2pc.dp.core.lib.entity.MsgTrackerEntity;
 import g2pc.dp.core.lib.entity.TxnTrackerEntity;
 import g2pc.dp.core.lib.repository.MsgTrackerRepository;
+import g2pc.dp.core.lib.repository.TxnTrackerRepository;
 import g2pc.dp.core.lib.service.TxnTrackerDbService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,14 +44,17 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
     @Autowired
     private MsgTrackerRepository msgTrackerRepository;
 
+    @Autowired
+    private TxnTrackerRepository txnTrackerRepository;
+
     /**
      * Save request details
      *
-     * @param requestDTO required
+     * @param requestDTO requestDTO to save in Db
      * @return request details entity
      */
     @Override
-    public MsgTrackerEntity saveRequestDetails(RequestDTO requestDTO) throws JsonProcessingException {
+    public MsgTrackerEntity saveRequestDetails(RequestDTO requestDTO, String protocol, Boolean sunbirdEnabled) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
 
@@ -68,6 +75,7 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
             msgTrackerEntity.setIsMsgEncrypted(headerDTO.getIsMsgEncrypted());
             msgTrackerEntity.setTransactionId(messageDTO.getTransactionId());
             msgTrackerEntity.setRawMessage(objectMapper.writeValueAsString(requestDTO));
+            msgTrackerEntity.setProtocol(protocol);
 
             List<SearchRequestDTO> searchRequestDTOList = messageDTO.getSearchRequest();
             for (SearchRequestDTO searchRequestDTO : searchRequestDTOList) {
@@ -107,8 +115,8 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
     /**
      * Build a search response
      *
-     * @param txnTrackerEntity required
-     * @param dataDTO          required
+     * @param txnTrackerEntity txnTrackerEntity to build search response
+     * @param dataDTO          dataDTO to build search response dto
      * @return SearchResponseDTO
      */
     @Override
@@ -134,7 +142,7 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
     /**
      * Build data
      *
-     * @param regRecordsString required
+     * @param regRecordsString regRecord to store in data dto
      * @return DataDTO
      */
     @Override
@@ -155,19 +163,19 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
     /**
      * Get updated search response list
      *
-     * @param requestDTO            required
-     * @param refRecordsStringsList required
+     * @param requestDTO            request dto to be updated
+     * @param refRecordsStringsList list of records
      * @return updated search response list
      */
     @Override
     public List<SearchResponseDTO> getUpdatedSearchResponseList(RequestDTO requestDTO,
-                                                                List<String> refRecordsStringsList) throws IOException {
+                                                                List<String> refRecordsStringsList,
+                                                                String protocol,
+                                                                Boolean sunbirdEnabled) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
-
         List<SearchResponseDTO> searchResponseDTOList = new ArrayList<>();
-
-        MsgTrackerEntity msgTrackerEntity = saveRequestDetails(requestDTO);
+        MsgTrackerEntity msgTrackerEntity = saveRequestDetails(requestDTO, protocol, sunbirdEnabled);
 
         List<TxnTrackerEntity> txnTrackerEntityList = msgTrackerEntity.getTxnTrackerEntityList();
         int totalCount = txnTrackerEntityList.size();
@@ -206,4 +214,84 @@ public class TxnTrackerDbServiceImpl implements TxnTrackerDbService {
         msgTrackerRepository.save(msgTrackerEntity);
         return searchResponseDTOList;
     }
+
+    /**
+     * @param statusRequestDTO statusRequestDTO to save in db
+     * @return MsgTrackerEntity
+     * @throws JsonProcessingException jsonProcessingException might be thrown
+     */
+    @Override
+    public MsgTrackerEntity saveStatusRequestDetails(StatusRequestDTO statusRequestDTO) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class);
+
+        MsgTrackerEntity entity;
+
+        HeaderDTO headerDTO = statusRequestDTO.getHeader();
+        StatusRequestMessageDTO messageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
+        String transactionId = messageDTO.getTransactionId();
+        Optional<MsgTrackerEntity> msgTrackerEntityOptional = msgTrackerRepository.findByTransactionId(transactionId);
+        if (msgTrackerEntityOptional.isEmpty()) {
+            MsgTrackerEntity msgTrackerEntity = new MsgTrackerEntity();
+            msgTrackerEntity.setVersion(headerDTO.getVersion());
+            msgTrackerEntity.setMessageId(headerDTO.getMessageId());
+            msgTrackerEntity.setMessageTs(headerDTO.getMessageTs());
+            msgTrackerEntity.setAction(headerDTO.getAction());
+            msgTrackerEntity.setSenderId(headerDTO.getSenderId());
+            msgTrackerEntity.setReceiverId(headerDTO.getReceiverId());
+            msgTrackerEntity.setIsMsgEncrypted(headerDTO.getIsMsgEncrypted());
+            msgTrackerEntity.setTransactionId(messageDTO.getTransactionId());
+            msgTrackerEntity.setRawMessage(objectMapper.writeValueAsString(statusRequestDTO));
+
+            TxnStatusRequestDTO txnStatusRequestDTO = messageDTO.getTxnStatusRequest();
+            TxnTrackerEntity txnTrackerEntity = new TxnTrackerEntity();
+            txnTrackerEntity.setTimestamp(null);
+            txnTrackerEntity.setVersion(null);
+            txnTrackerEntity.setRegType(null);
+            txnTrackerEntity.setRegSubType(null);
+            txnTrackerEntity.setQueryType(null);
+            txnTrackerEntity.setQuery(null);
+            txnTrackerEntity.setTxnStatus(null);
+            txnTrackerEntity.setTxnType(txnStatusRequestDTO.getTxnType());
+            txnTrackerEntity.setCreatedDate(new Timestamp(System.currentTimeMillis()));
+            txnTrackerEntity.setLastUpdatedDate(new Timestamp(System.currentTimeMillis()));
+            txnTrackerEntity.setMsgTrackerEntity(msgTrackerEntity);
+            msgTrackerEntity.getTxnTrackerEntityList().add(txnTrackerEntity);
+
+            entity = msgTrackerRepository.save(msgTrackerEntity);
+        } else {
+            entity = msgTrackerEntityOptional.get();
+        }
+        return entity;
+    }
+
+    /**
+     * @param responseMessageDTO responseMessageDTO to update in db
+     * @param transactionId      transactionId to search in db
+     */
+    @Override
+    public void updateStatusResponseDetails(ResponseMessageDTO responseMessageDTO, String transactionId) {
+
+        Optional<MsgTrackerEntity> msgTrackerEntityOptional = msgTrackerRepository.findByTransactionId(transactionId);
+        MsgTrackerEntity msgTrackerEntity = msgTrackerEntityOptional.get();
+        Optional<TxnTrackerEntity> trackerEntityOptional = txnTrackerRepository.findByMsgTrackerEntity(msgTrackerEntity);
+        TxnTrackerEntity txnTrackerEntity = trackerEntityOptional.get();
+        txnTrackerEntity.setTxnStatus(responseMessageDTO.toString());
+        txnTrackerRepository.save(txnTrackerEntity);
+    }
+
+    /**
+     * @param transactionId transactionId used to search data
+     */
+    @Override
+    public void updateMessageTrackerStatusDb(String transactionId) {
+        Optional<MsgTrackerEntity> msgTrackerEntityOptional = msgTrackerRepository.findByTransactionId(transactionId);
+        MsgTrackerEntity msgTrackerEntity = msgTrackerEntityOptional.get();
+        msgTrackerEntity.setStatus(HeaderStatusENUM.SUCC.toValue());
+        msgTrackerEntity.setStatusReasonCode(HeaderStatusENUM.SUCC.toValue());
+        msgTrackerEntity.setStatusReasonMessage(HeaderStatusENUM.SUCC.toValue());
+        msgTrackerEntity.setCorrelationId(CommonUtils.generateUniqueId("C"));
+        msgTrackerRepository.save(msgTrackerEntity);
+    }
+
 }
