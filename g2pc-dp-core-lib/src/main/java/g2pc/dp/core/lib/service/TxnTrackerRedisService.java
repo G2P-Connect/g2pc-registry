@@ -2,7 +2,6 @@ package g2pc.dp.core.lib.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
-
 import java.util.List;
 
 public interface TxnTrackerRedisService {

@@ -2,7 +2,6 @@ package g2pc.dp.core.lib.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.sql.Timestamp;
 
 @Builder
@@ -59,6 +58,12 @@ public class TxnTrackerEntity {
 
     @Column(name = "no_of_records")
     private Integer noOfRecords;
+
+    @Column(name = "txn_type")
+    private String txnType;
+
+    @Column(name = "txn_status")
+    private String txnStatus;
 
     @Column(insertable = false, updatable = false)
     private Timestamp createdDate;
