@@ -6,12 +6,14 @@ import java.io.IOException;
 
 public enum ActionsENUM {
 
-    SEARCH, ON_SEARCH;
+    SEARCH, ON_SEARCH , STATUS , ON_STATUS;
 
     public String toValue() {
         switch (this) {
             case SEARCH: return "search";
             case ON_SEARCH: return "on-search";
+            case STATUS:  return  "status";
+            case ON_STATUS: return "on-status";
         }
         return null;
     }
@@ -21,6 +23,8 @@ public enum ActionsENUM {
             switch (value.toLowerCase()) {
                 case "search": return SEARCH;
                 case "on-search": return ON_SEARCH;
+                case "status" : return STATUS;
+                case  "on-status" : return ON_STATUS;
             }
         }
         throw new IOException(CoreConstants.CANNOT_DESERIALIZE_TYPE);

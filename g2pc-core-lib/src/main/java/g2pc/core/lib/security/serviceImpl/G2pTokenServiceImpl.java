@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.config.G2pUnirestHelper;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.security.G2pTokenResponse;
 import g2pc.core.lib.dto.common.security.TokenExpiryDto;
 import g2pc.core.lib.security.service.G2pTokenService;
@@ -43,9 +44,9 @@ public class G2pTokenServiceImpl implements G2pTokenService {
      * @param URL keycloak url
      * @param clientId clientID
      * @param clientSecret clientSecret
-     * @return
-     * @throws IOException
-     * @throws UnirestException
+     * @return G2pTokenResponse
+     * @throws IOException might be thrown 
+     * @throws UnirestException might be thrown 
      */
     @Override
     public G2pTokenResponse getToken(String URL, String clientId, String clientSecret) throws IOException, UnirestException {
@@ -54,31 +55,31 @@ public class G2pTokenServiceImpl implements G2pTokenService {
         ObjectMapper objectMapper = new ObjectMapper();
         // Make an HTTP POST request using Unirest
         HttpResponse<JsonNode> response = Unirest.post(URL)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .field("grant_type", grantType)
-                .field("client_id", clientId)
-                .field("client_secret", clientSecret)
+                .header(CoreConstants.CONTENT_TYPE, "application/x-www-form-urlencoded")
+                .field(CoreConstants.GRANT_TYPE, grantType)
+                .field(CoreConstants.CLIENT_ID, clientId)
+                .field(CoreConstants.CLIENT_SECRET, clientSecret)
                 .asJson();
 
         Map<String, Object> body = objectMapper.readValue(response.getBody().toString(), new TypeReference<Map<String, Object>>() {
         });
         G2pTokenResponse tokenResponse = new G2pTokenResponse();
-        tokenResponse.setAccess_token(body.get("access_token").toString());
-        tokenResponse.setToken_type(body.get("token_type").toString());
-        tokenResponse.setExpires_in(body.get("expires_in").toString());
+        tokenResponse.setAccessToken(body.get(CoreConstants.ACCESS_TOKEN).toString());
+        tokenResponse.setTokenType(body.get(CoreConstants.TOKEN_TYPE).toString());
+        tokenResponse.setExpiresIn(body.get(CoreConstants.EXPIRES_IN).toString());
         return tokenResponse;
     }
 
     /**
      * Method to create tokenExpiryDto
-     * @param g2pTokenResponse
-     * @return
+     * @param g2pTokenResponse to create token expiry dto
+     * @return tokenExpiryDto
      */
     @Override
     public TokenExpiryDto createTokenExpiryDto(G2pTokenResponse g2pTokenResponse) {
         TokenExpiryDto tokenExpiryDto = new TokenExpiryDto();
-        tokenExpiryDto.setToken(g2pTokenResponse.getAccess_token());
-        tokenExpiryDto.setExpires_in(g2pTokenResponse.getExpires_in());
+        tokenExpiryDto.setToken(g2pTokenResponse.getAccessToken());
+        tokenExpiryDto.setExpiresIn(g2pTokenResponse.getExpiresIn());
         Timestamp currentTimeStamp = new Timestamp(System.currentTimeMillis());
         tokenExpiryDto.setDateSaved(currentTimeStamp);
         return tokenExpiryDto;
@@ -86,14 +87,13 @@ public class G2pTokenServiceImpl implements G2pTokenService {
 
     /**
      * Method to check whether token is expired or not by calculations
-     * @param tokenExpiryDto
-     * @return
-     * @throws ParseException
+     * @param tokenExpiryDto to check token expired 
+     * @return result 
+     * @throws ParseException might be thrown 
      */
     @Override
     public Boolean isTokenExpired(TokenExpiryDto tokenExpiryDto) throws ParseException {
         if (tokenExpiryDto != null) {
-            String accessToken = tokenExpiryDto.getToken();
             String lastSaved = tokenExpiryDto.getDateSaved().toString();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
             Date parsedDate = sdf.parse(lastSaved);
@@ -102,7 +102,7 @@ public class G2pTokenServiceImpl implements G2pTokenService {
             long milliseconds = currentTimeStamp.getTime() - lastTimeStamp.getTime();
             int seconds = (int) milliseconds / 1000;
             int minutes = seconds / 60;
-            int expiry = Integer.parseInt(tokenExpiryDto.getExpires_in()) / 60;
+            int expiry = Integer.parseInt(tokenExpiryDto.getExpiresIn()) / 60;
             return minutes > expiry;
 
         }
@@ -111,10 +111,10 @@ public class G2pTokenServiceImpl implements G2pTokenService {
 
     /**
      * Method to return clients present in realm of keycloak to validate token
-     * @param masterAdminUrl
-     * @param getClientUrl
-     * @return
-     * @throws JsonProcessingException
+     * @param masterAdminUrl master admin url
+     * @param getClientUrl get client url 
+     * @return clients
+     * @throws JsonProcessingException might be thrown 
      */
     @Override
     public ArrayList<Map<String, String>> getClientByRealm(String masterAdminUrl, String getClientUrl , String adminClientId , String adminClientSecret
@@ -123,35 +123,33 @@ public class G2pTokenServiceImpl implements G2pTokenService {
         ObjectMapper objectMapper = new ObjectMapper();
         ArrayList<Map<String, String>> responseMap = new ArrayList<>();
         HttpResponse<JsonNode> response = Unirest.post(masterAdminUrl)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .field("grant_type", grantType)
-                .field("client_id", adminClientId)
-                .field("client_secret", adminClientSecret)
-                .field("username",username)
-                .field("password",password)
+                .header(CoreConstants.CONTENT_TYPE, "application/x-www-form-urlencoded")
+                .field(CoreConstants.GRANT_TYPE, grantType)
+                .field(CoreConstants.CLIENT_ID, adminClientId)
+                .field(CoreConstants.CLIENT_SECRET, adminClientSecret)
+                .field( CoreConstants.USERNAME,username)
+                .field(CoreConstants.PASSWORD,password)
                 .asJson();
         Map<String, Object> responseBody = objectMapper.readValue(response.getBody().toString(), new TypeReference<Map<String, Object>>() {});
-        if(responseBody.get("access_token")!=null){
-            String token = responseBody.get("access_token").toString();
+        if(responseBody.get(CoreConstants.ACCESS_TOKEN)!=null){
+            String token = responseBody.get(CoreConstants.ACCESS_TOKEN).toString();
             HttpResponse<String> clientResponse = g2pUnirestHelper.g2pGet(getClientUrl)
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + token)
+                    .header(CoreConstants.CONTENT_TYPE, "application/json")
+                    .header(CoreConstants.AUTHORIZATION, "Bearer " + token)
                     .asString();
            responseMap  = objectMapper.readValue(clientResponse.getBody(), ArrayList.class);
-
         }
-
-                return responseMap;
+        return responseMap;
 
     }
 
     /**
      * Method to validate the token whether its present in client list of respective realm
-     * @param masterAdminUrl
-     * @param getClientUrl
-     * @param clientId
-     * @return
-     * @throws JsonProcessingException
+     * @param masterAdminUrl keycloak master url
+     * @param getClientUrl keycloak client url
+     * @param clientId client id for validate
+     * @return result
+     * @throws JsonProcessingException might be thrown
      */
     @Override
     public boolean validateToken(String masterAdminUrl, String getClientUrl , String clientId ,
@@ -171,16 +169,16 @@ public class G2pTokenServiceImpl implements G2pTokenService {
 
     /**
      * Method to decode the token
-     * @param jwtToken
-     * @return
-     * @throws JsonProcessingException
+     * @param jwtToken token to decode
+     * @return clientId
+     * @throws JsonProcessingException might be thrown
      */
     @Override
     public String decodeToken(String jwtToken) throws JsonProcessingException {
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String[] split_string = jwtToken.split("\\.");
-        String base64EncodedPayload = split_string[1];
+        String[] splitString = jwtToken.split("\\.");
+        String base64EncodedPayload = splitString[1];
         org.apache.commons.codec.binary.Base64 base64Url = new Base64(true);
         String body = new String(base64Url.decode(base64EncodedPayload));
         HashMap<String, String> payLoad = objectMapper.readValue(body, HashMap.class);
@@ -189,27 +187,28 @@ public class G2pTokenServiceImpl implements G2pTokenService {
 
     /**
      * Method to do introspect of token using keycloak api
-     * @param url
-     * @param token
-     * @param clientId
-     * @param clientSecret
-     * @return
-     * @throws UnirestException
+     * @param url url for keycloak
+     * @param token token to verify
+     * @param clientId clientId to verify
+     * @param clientSecret clientSecret to verify
+     * @return result
+     * @throws UnirestException might be thrown
      */
     @Override
     public ResponseEntity<String> getInterSpectResponse(String url, String token, String clientId, String clientSecret) throws UnirestException {
-        ObjectMapper objectMapper = new ObjectMapper();
         HttpResponse<String> introResponse = Unirest.post(url)
-                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header(CoreConstants.CONTENT_TYPE, "application/x-www-form-urlencoded")
                 .field("token", token)
-                .field("client_id", clientId)
-                .field("client_secret", clientSecret)
+                .field(CoreConstants.CLIENT_ID, clientId)
+                .field(CoreConstants.CLIENT_SECRET, clientSecret)
                 .asString();
 
         JSONObject json = new JSONObject(introResponse.getBody());
-        String isValid = json.getString("active");
-        if (isValid.equals("true")) {
-            return ResponseEntity.status(HttpStatus.OK).body("Token is valid");
+        if(json!=null && !json.getString("active").isEmpty()) {
+            String isValid = json.getString("active");
+            if (isValid.equals("true")) {
+                return ResponseEntity.status(HttpStatus.OK).body("Token is valid");
+            }
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Token is not valid");
     }

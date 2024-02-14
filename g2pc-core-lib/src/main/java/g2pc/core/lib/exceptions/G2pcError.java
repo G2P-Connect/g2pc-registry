@@ -1,6 +1,7 @@
 package g2pc.core.lib.exceptions;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 /**
@@ -11,6 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class G2pcError {
 
     private String code ;

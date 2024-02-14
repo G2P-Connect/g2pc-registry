@@ -1,4 +1,4 @@
-package g2pc.core.lib.dto.common.message.request;
+package g2pc.core.lib.dto.search.message.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;

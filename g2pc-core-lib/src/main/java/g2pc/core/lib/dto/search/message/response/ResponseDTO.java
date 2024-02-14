@@ -1,4 +1,4 @@
-package g2pc.core.lib.dto.common.message.response;
+package g2pc.core.lib.dto.search.message.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import g2pc.core.lib.dto.common.header.HeaderDTO;

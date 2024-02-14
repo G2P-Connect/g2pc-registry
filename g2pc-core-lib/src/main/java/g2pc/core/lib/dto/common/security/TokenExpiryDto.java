@@ -14,7 +14,7 @@ public class TokenExpiryDto {
 
     private String token;
 
-    private String expires_in;
+    private String expiresIn;
 
     private Timestamp dateSaved;
 

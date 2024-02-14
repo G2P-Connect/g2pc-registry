@@ -1,4 +1,5 @@
-package g2pc.core.lib.dto.common.message.request;
+package g2pc.core.lib.dto.status.message.request;
+
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,16 +11,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SearchRequestDTO {
+public class TxnStatusRequestDTO {
 
-    @JsonProperty("reference_id")
-    private String referenceId;
+    @JsonProperty("txn_type")
+    private String txnType;
 
-    @JsonProperty("timestamp")
-    private String timestamp;
+    @JsonProperty("attribute_type")
+    private String attributeType;
 
-    @JsonProperty("search_criteria")
-    private SearchCriteriaDTO searchCriteria;
+    @JsonProperty("attribute_value")
+    private Object attributeValue;
 
     @JsonProperty("locale")
     private String locale;

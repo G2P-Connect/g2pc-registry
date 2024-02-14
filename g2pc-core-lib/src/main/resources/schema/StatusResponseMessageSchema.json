@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Message schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties" : {
+    "type": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "correlation_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "txnstatus_response" : {
+        "type" : "object",
+        "properties" : {
+          "txn_type": {
+            "type": "string",
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "txn_status": {
+            "type": "object"
+          }
+        }
+    }
+
+
+  },
+
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+
+
+

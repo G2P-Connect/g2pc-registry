@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class AcknowledgementDTO {
 
     @JsonProperty("message")
-    private String message;
+    private Object message;
 
     @JsonProperty("status")
     private String status;

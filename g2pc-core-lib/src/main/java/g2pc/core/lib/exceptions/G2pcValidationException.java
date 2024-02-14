@@ -15,8 +15,6 @@ import java.util.List;
 @Setter
 public class G2pcValidationException extends Exception{
 
-
-
     private List<G2pcError> g2PcErrorList;
 
     /**
