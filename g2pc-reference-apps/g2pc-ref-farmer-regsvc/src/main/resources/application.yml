@@ -9,9 +9,10 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: not_set
-    username: not_set
-    password: not_set
+    # Change db name (gtwop) , schema name (farmer) , username and password for db connection as per your postgres/mysql connection.
+    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp1?currentSchema=g2pc
+    username: postgres
+    password: K6tnrCU0wqXOwPW
 
     hikari:
       data-source-properties:
@@ -47,54 +48,86 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: not_set
+  port: 9001
   error:
     include-message: always
 
 spring.data.redis:
   repositories.enabled: false
-  host: not_set
-  password: not_set
-  port: not_set
+  host: 3.109.26.38
+  password: cdpi@99222
+  port: 6378
 
 client:
   api_urls:
-    client_search_api: not_set
+    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
+    client_status_api: "http://localhost:8000/private/api/v1/registry/on-status"
 
 keycloak:
   from_dc:
-    url: not_set
-    clientId: not_set
-    clientSecret: not_set
+    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
+    clientId: dc-client
+    clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
   dp:
-    url: not_set
-    username: not_set
-    password: not_set
+    url: https://g2pc-dp1-lab.cdpi.dev/auth
+    username: admin
+    password: cdpi@9923
     master:
-      url: not_set
-      getClientUrl: not_set
-      clientId: not_set
-      clientSecret: not_set
+      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
+      getClientUrl: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
+      clientId: admin-cli
+      clientSecret: G7rVA27HI5UpzMJfomRvaQHubtbAcWcN
     client:
-      url: not_set
-      realm: not_set
-      clientId: not_set
-      clientSecret: not_set
-      realmClientId: not_set
-      realmClientSecret: not_set
+      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token
+      realm: dp-farmer
+      clientId: dp-farmer-client
+      clientSecret: 55VuMuin1T8xbYSUu5zAJAebA05tSwkX
 
 crypto:
   to_dc:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
+    support_encryption: true
+    support_signature: true
+    password: "farmer_on_search"
+    key_path: "classpath:farmer_on_search.p12"
+    id: FARMER
   from_dc:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
+    support_encryption: true
+    support_signature: true
+    password: "farmer_search"
+    key_path: "classpath:farmer_search.p12"
 
 dashboard:
-  dp_dashboard_url: not_set
+  dp_dashboard_url: "http://3.109.26.38:3005/d-solo/e62ae08b-a6e1-4095-af79-c36f02b8fae2/dp1-dashboard?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  cors_origin_url: "http://localhost:8000"
+
+sftp:
+  listener:
+    host: localhost
+    port: 2225
+    user: cdpi
+    password: 1234
+    remote:
+      inbound_directory: /inbound
+      outbound_directory: /outbound
+    local:
+      inbound_directory: /home/prihir/g2pc/dp1/inbound
+      outbound_directory: /home/prihir/g2pc/dp1/outbound
+
+  dc:
+    host: localhost
+    port: 2224
+    user: cdpi
+    password: 1234
+    remote:
+      inbound_directory: /inbound
+      outbound_directory: /outbound
+
+sunbird:
+  api_urls:
+    response_data_api: http://3.109.26.38:8083/api/v1/Msg_Tracker
+    response_tracker_api: http://3.109.26.38:8083/api/v1/Txn_Tracker
+  enabled: true
+  elasticsearch:
+    host: 3.109.26.38
+    port: 9200
+    scheme: http
