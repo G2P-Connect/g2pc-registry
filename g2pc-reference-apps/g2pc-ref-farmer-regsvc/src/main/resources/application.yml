@@ -9,10 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    # Change db name (gtwop) , schema name (farmer) , username and password for db connection as per your postgres/mysql connection.
-    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dp1?currentSchema=g2pc
-    username: postgres
-    password: K6tnrCU0wqXOwPW
+    url: not_set
+    username: not_set
+    password: not_set
 
     hikari:
       data-source-properties:
@@ -48,86 +47,86 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: 9001
+  port: not_set
   error:
     include-message: always
 
 spring.data.redis:
   repositories.enabled: false
-  host: 3.109.26.38
-  password: cdpi@99222
-  port: 6378
+  host: not_set
+  password: not_set
+  port: not_set
 
 client:
   api_urls:
-    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
-    client_status_api: "http://localhost:8000/private/api/v1/registry/on-status"
+    client_search_api: not_set
+    client_status_api: not_set
 
 keycloak:
   from_dc:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
-    clientId: dc-client
-    clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+    url: not_set
+    clientId: not_set
+    clientSecret: not_set
   dp:
-    url: https://g2pc-dp1-lab.cdpi.dev/auth
-    username: admin
-    password: cdpi@9923
+    url: not_set
+    username: not_set
+    password: not_set
     master:
-      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-      getClientUrl: https://g2pc-dp1-lab.cdpi.dev/auth/admin/realms/dp-farmer/clients
-      clientId: admin-cli
-      clientSecret: G7rVA27HI5UpzMJfomRvaQHubtbAcWcN
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
     client:
-      url: https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token
-      realm: dp-farmer
-      clientId: dp-farmer-client
-      clientSecret: 55VuMuin1T8xbYSUu5zAJAebA05tSwkX
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
 
 crypto:
   to_dc:
     support_encryption: true
     support_signature: true
-    password: "farmer_on_search"
-    key_path: "classpath:farmer_on_search.p12"
-    id: FARMER
+    password: not_set
+    key_path: not_set
+    id: not_set
   from_dc:
     support_encryption: true
     support_signature: true
-    password: "farmer_search"
-    key_path: "classpath:farmer_search.p12"
+    password: not_set
+    key_path: not_set
 
 dashboard:
-  dp_dashboard_url: "http://3.109.26.38:3005/d-solo/e62ae08b-a6e1-4095-af79-c36f02b8fae2/dp1-dashboard?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  cors_origin_url: "http://localhost:8000"
+  dp_dashboard_url: not_set
+  cors_origin_url: not_set
 
 sftp:
   listener:
-    host: localhost
-    port: 2225
-    user: cdpi
-    password: 1234
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
     remote:
-      inbound_directory: /inbound
-      outbound_directory: /outbound
+      inbound_directory: not_set
+      outbound_directory: not_set
     local:
-      inbound_directory: /home/prihir/g2pc/dp1/inbound
-      outbound_directory: /home/prihir/g2pc/dp1/outbound
+      inbound_directory: not_set
+      outbound_directory: not_set
 
   dc:
-    host: localhost
-    port: 2224
-    user: cdpi
-    password: 1234
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
     remote:
-      inbound_directory: /inbound
-      outbound_directory: /outbound
+      inbound_directory: not_set
+      outbound_directory: not_set
 
 sunbird:
   api_urls:
-    response_data_api: http://3.109.26.38:8083/api/v1/Msg_Tracker
-    response_tracker_api: http://3.109.26.38:8083/api/v1/Txn_Tracker
+    response_data_api: not_set
+    response_tracker_api: not_set
   enabled: true
   elasticsearch:
-    host: 3.109.26.38
-    port: 9200
-    scheme: http
+    host: not_set
+    port: not_set
+    scheme: not_set
