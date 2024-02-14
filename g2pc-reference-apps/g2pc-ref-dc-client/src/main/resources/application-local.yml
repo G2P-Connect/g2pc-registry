@@ -9,9 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/dc1?currentSchema=g2pc
-    username: postgres
-    password: postgres
+    url: not_set
+    username: not_set
+    password: not_set
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -26,6 +26,13 @@ spring:
         maintainTimeStats: false
         maximum-pool-size: 5
         connection-timeout: 5000
+
+  second-datasource:
+    driverClassName: not_set
+    url: not_set
+    username: not_set
+    password: not_set
+
   jpa:
     properties:
       hibernate:
@@ -52,77 +59,117 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: localhost
-  password: 123456789
+  host: 3.109.26.38
+  password: cdpi@99221
   port: 6379
-
-  api_urls:
-    #farmer_search_api: "https://webhook.site/9043a6a4-1710-4af6-a7c6-25a55c6fc903"
-    #mobile_search_api: "http://localhost:9200/private/api/v1/registry/mobile/info"
-    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
-    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
 
 keycloak:
   from_dp:
     farmer:
-      url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
-      clientId: "dp-farmer-client"
-      clientSecret: "55VuMuin1T8xbYSUu5zAJAebA05tSwkX"
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
     mobile:
-      url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
-      clientId: "dp-mobile-client"
-      clientSecret: "d9yPYp8G2nYLh1ztdeqvdvtxEYqx63Xg"
+      url: not_set
+      clientId: not_set
+      clientSecret: not_set
   dc:
-    url: https://g2pc-dc-lab.cdpi.dev/auth
-    username: admin
-    password: cdpi@9922
+    url: not_set
+    username: not_set
+    password: not_set
     master:
-      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-      getClientUrl: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
-      clientId: admin-cli
-      clientSecret: bCfUQy4z4NKiiz82zScJdKGtbKbchkhs
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
     client:
-      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token
-      realm: data-consumer
-      clientId: dc-client
-      clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
 
 crypto:
   to_dp_farmer:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_search"
-    key_path: "classpath:farmer_search.p12"
+    password: not_set
+    key_path: not_set
   to_dp_mobile:
-    support_encryption: true
-    support_signature: true
-    password: "mobile_search"
-    key_path: "classpath:mobile_search.p12"
+    password: not_set
+    key_path: not_set
   from_dp_farmer:
-    support_encryption: true
-    support_signature: true
-    password: "farmer_on_search"
-    key_path: "classpath:farmer_on_search.p12"
-    id: FARMER
+    password: not_set
+    key_path: not_set
   from_dp_mobile:
-    support_encryption: true
-    support_signature: true
-    password: "mobile_on_search"
-    key_path: "classpath:mobile_on_search.p12"
-    id: MOBILE
+    password: not_set
+    key_path: not_set
+  sample:
+    password: not_set
+    key.path: not_set
 
 registry:
   api_urls:
-    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
-    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
-    farmer_search_public_api: "https://g2pc-dp1-lab.cdpi.dev/dp-farmer/public/api/v1/registry/search"
-    mobile_search_public_api: "https://g2pc-dp2-lab.cdpi.dev/dp-mno/public/api/v1/registry/search"
+    farmer_search_api: not_set
+    mobile_search_api: not_set
+    farmer_status_api: not_set
+    mobile_status_api: not_set
 
 dashboard:
-  left_panel_url: "http://3.109.26.38:3005/d-solo/cb26f39f-97f3-43ea-9f42-68d49d9822a3/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  right_panel_url: "http://3.109.26.38:3005/d-solo/d9f9c625-934b-4a65-995f-c742daad6387/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  bottom_panel_url: "http://3.109.26.38:3005/d-solo/a25a6c65-fda7-4fdd-80a7-80442aed17e8/bottom-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
-  post_endpoint_url: "https://g2pc-dc-lab.cdpi.dev/dc-client/public/api/v1/consumer/search/csv"
-  clear_dc_db_endpoint_url: "https://g2pc-dc-lab.cdpi.dev/dc-client/public/api/v1/consumer/search/csv"
-  clear_dp_db_endpoint_url: "https://g2pc-dc-lab.cdpi.dev/dc-client/public/api/v1/consumer/search/csv"
-  post_sftp_endpoint_url: "http://localhost:8000/public/api/v1/consumer/search/sftp/csv"
+  left_panel_url: not_set
+  right_panel_url: not_set
+  bottom_panel_url: not_set
+  post_https_endpoint_url: not_set
+  clear_dc_db_endpoint_url: not_set
+  clear_dp1_db_endpoint_url: not_set
+  clear_dp2_db_endpoint_url: not_set
+  left_panel_data_endpoint_url: not_set
+  sftp_post_endpoint_url: not_set
+  sftp_dc_data_endpoint_url: not_set
+  sftp_dp1_data_endpoint_url: not_set
+  sftp_dp2_data_endpoint_url: not_set
+  dc_status_endpoint_url: not_set
+  sftp_left_panel_url: not_set
+  sftp_right_panel_url: not_set
+  sftp_bottom_panel_url: not_set
+  https_sunbird_left_panel_url: not_set
+  https_sunbird_right_panel_url: not_set
+  https_sunbird_bottom_panel_url: not_set
+  sftp_sunbird_left_panel_url: not_set
+  sftp_sunbird_right_panel_url: not_set
+  sftp_sunbird_bottom_panel_url: not_set
+
+sftp:
+  listener:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+    local:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+  dp1:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+
+  dp2:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+
+sunbird:
+  api_urls:
+    response_data_api: not_set
+    response_tracker_api: not_set
+  elasticsearch:
+    host: not_set
+    port: not_set
+    scheme: not_set
