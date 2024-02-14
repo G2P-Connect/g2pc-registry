@@ -9,10 +9,9 @@ spring:
 
   datasource:
     driverClassName: org.postgresql.Driver
-    url: not_set
-    username: not_set
-    password: not_set
-
+    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/dc1?currentSchema=g2pc
+    username: postgres
+    password: K6tnrCU0wqXOwPW
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -27,6 +26,13 @@ spring:
         maintainTimeStats: false
         maximum-pool-size: 5
         connection-timeout: 5000
+
+  second-datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://g2pc-spec-demo-rds.cs9zoco3zxkq.ap-south-1.rds.amazonaws.com:5432/registry?currentSchema=public
+    username: postgres
+    password: K6tnrCU0wqXOwPW
+
   jpa:
     properties:
       hibernate:
@@ -53,69 +59,128 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: localhost
-  password: 123456789
+  host: 3.109.26.38
+  password: cdpi@99221
   port: 6379
 
 keycloak:
   from_dp:
     farmer:
-      url: not_set
-      clientId: not_set
-      clientSecret: not_set
+      url: "https://g2pc-dp1-lab.cdpi.dev/auth/realms/dp-farmer/protocol/openid-connect/token"
+      clientId: "dp-farmer-client"
+      clientSecret: "55VuMuin1T8xbYSUu5zAJAebA05tSwkX"
     mobile:
-      url: not_set
-      clientId: not_set
-      clientSecret: not_set
+      url: "https://g2pc-dp2-lab.cdpi.dev/auth/realms/dp-mobile/protocol/openid-connect/token"
+      clientId: "dp-mobile-client"
+      clientSecret: "d9yPYp8G2nYLh1ztdeqvdvtxEYqx63Xg"
   dc:
-    url: not_set
-    username: not_set
-    password: not_set
+    url: https://g2pc-dc-lab.cdpi.dev/auth
+    username: admin
+    password: cdpi@9922
     master:
-      url: not_set
-      getClientUrl: not_set
-      clientId: not_set
-      clientSecret: not_set
+      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
+      getClientUrl: https://g2pc-dc-lab.cdpi.dev/auth/admin/realms/data-consumer/clients
+      clientId: admin-cli
+      clientSecret: bCfUQy4z4NKiiz82zScJdKGtbKbchkhs
     client:
-      url: not_set
-      realm: not_set
-      clientId: not_set
-      clientSecret: not_set
+      url: https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token
+      realm: data-consumer
+      clientId: dc-client
+      clientSecret: co0rJfm3mIq0OXysAt6DtDjibOHkcktY
 
 crypto:
   to_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
+    support_encryption: true
+    support_signature: true
+    password: "farmer_search"
+    key_path: "classpath:farmer_search.p12"
   to_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
+    support_encryption: true
+    support_signature: true
+    password: "mobile_search"
+    key_path: "classpath:mobile_search.p12"
   from_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
+    support_encryption: true
+    support_signature: true
+    password: "farmer_on_search"
+    key_path: "classpath:farmer_on_search.p12"
+    id: FARMER
   from_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
-    password: not_set
-    key_path: not_set
-    id: not_set
+    support_encryption: true
+    support_signature: true
+    password: "mobile_on_search"
+    key_path: "classpath:mobile_on_search.p12"
+    id: MOBILE
+  sample:
+    password: "test"
+    key.path: "classpath:1693731657.p12"
 
 registry:
   api_urls:
-    farmer_search_api: not_set
-    mobile_search_api: not_set
+    farmer_search_api: "http://localhost:9001/private/api/v1/registry/search"
+    mobile_search_api: "http://localhost:9002/private/api/v1/registry/search"
+    farmer_status_api: "http://localhost:9001/private/api/v1/registry/txn/status"
+    mobile_status_api: "http://localhost:9002/private/api/v1/registry/txn/status"
 
 dashboard:
-  left_panel_url: not_set
-  right_panel_url: not_set
-  bottom_panel_url: not_set
-  post_endpoint_url: not_set
-  clear_dc_db_endpoint_url: not_set
-  clear_dp1_db_endpoint_url: not_set
-  clear_dp2_db_endpoint_url: not_set
+  left_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/cb26f39f-97f3-43ea-9f42-68d49d9822a3/left-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  right_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/d9f9c625-934b-4a65-995f-c742daad6387/right-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  bottom_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/a25a6c65-fda7-4fdd-80a7-80442aed17e8/bottom-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  post_https_endpoint_url: "http://localhost:8000/public/api/v1/consumer/search/csv"
+  clear_dc_db_endpoint_url: "http://localhost:8000/private/api/v1/registry/clear-db"
+  clear_dp1_db_endpoint_url: "http://localhost:9001/private/api/v1/registry/clear-db"
+  clear_dp2_db_endpoint_url: "http://localhost:9002/private/api/v1/registry/clear-db"
+  left_panel_data_endpoint_url: "http://localhost:8000/dashboard/leftPanel/data"
+  sftp_post_endpoint_url: "http://localhost:8000/public/api/v1/consumer/search/sftp/csv"
+  sftp_dc_data_endpoint_url: "http://localhost:8000/dashboard/sftp/dc/data"
+  sftp_dp1_data_endpoint_url: "http://localhost:9001/dashboard/sftp/dp1/data"
+  sftp_dp2_data_endpoint_url: "http://localhost:9002/dashboard/sftp/dp2/data"
+  dc_status_endpoint_url: "http://localhost:8000/private/api/v1/consumer/status/payload?transactionType=search&transactionId="
+  sftp_left_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/aa62b4d5-f0c6-4c5d-97eb-753343c89a32/sftp-left-panel-data?orgId=1&refresh=5s&from=1705573550702&to=1705595150703&panelId=1"
+  sftp_right_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/c319354b-d0a9-4541-ae9f-d052e31fa275/sftp-right-panel-data?orgId=1&refresh=5s&from=1705574488336&to=1705596088337&panelId=1"
+  sftp_bottom_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/c63fe588-c69c-4918-bb96-97fba722afc8/sftp-bottom-panel-data?orgId=1&refresh=5s&from=1705574366440&to=1705595966440&panelId=1"
+  https_sunbird_left_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/d5398a4d-e778-408b-b26a-6717d7d119e6/https-sunbird-left-panel_data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  https_sunbird_right_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/dde256ef-413c-420b-8e95-752b164bc533/https-sunbird-right-panel_data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  https_sunbird_bottom_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/e5fa2e19-8d97-40e5-b971-566b5eac5c87/https-sunbird-bottom-panel-data?orgId=1&refresh=5s&from=1701984074137&to=1702005674137&panelId=1"
+  sftp_sunbird_left_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/e5450e12-17d8-43b3-bd8f-1b0fc12e0880/sftp-sunbird-left-panel-data?orgId=1&refresh=5s&from=1705573550702&to=1705595150703&panelId=1"
+  sftp_sunbird_right_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/bce49bdf-a4a2-45fc-8c1e-9eb9f00a56e6/sftp-sunbird-right-panel-data?orgId=1&refresh=5s&from=1705574488336&to=1705596088337&panelId=1"
+  sftp_sunbird_bottom_panel_url: "https://g2pc-dc-lab.cdpi.dev/grafana/d-solo/e6424a1e-8c7c-4a3d-9ae9-cb93f4fb8eb3/sftp-sunbird-bottom-panel-data?orgId=1&refresh=5s&from=1705574366440&to=1705595966440&panelId=1"
+
+sftp:
+  listener:
+    host: localhost
+    port: 2224
+    user: cdpi
+    password: 1234
+    remote:
+      inbound_directory: /inbound
+      outbound_directory: /outbound
+    local:
+      inbound_directory: /home/prihir/g2pc/dc/inbound
+      outbound_directory: /home/prihir/g2pc/dc/outbound
+
+  dp1:
+    host: localhost
+    port: 2225
+    user: cdpi
+    password: 1234
+    remote:
+      inbound_directory: /inbound
+
+  dp2:
+    host: localhost
+    port: 2226
+    user: cdpi
+    password: 1234
+    remote:
+      inbound_directory: /inbound
+
+sunbird:
+  api_urls:
+    response_data_api: http://3.109.26.38:8083/api/v1/Response_Data
+    response_tracker_api: http://3.109.26.38:8083/api/v1/Response_Tracker
+  enabled: true
+  elasticsearch:
+    host: 3.109.26.38
+    port: 9200
+    scheme: http

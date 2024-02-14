@@ -19,11 +19,15 @@ public class Constants {
 
     public static final String ON_SEARCH_RESPONSE_RECEIVED = "On-Search response received successfully";
 
-    //registry name constants
+    public static final String ON_STATUS_RESPONSE_RECEIVED = "On-Status response received successfully";
+
     public static final String FARMER_REGISTRY = "farmer_registry";
 
     public static final String MOBILE_REGISTRY = "mobile_registry";
 
     public static final String CONFIGURATION_MISMATCH_ERROR = "Configurations are not matching ";
 
+    public static final String UPLOAD_ERROR = "Failed to upload file:";
+
+    public static final String GENERATE_REQUEST_ERROR_MESSAGE = "Exception in generateRequest : ";
 }
