@@ -1,9 +1,7 @@
 package g2pc.ref.mno.regsvc.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import g2pc.core.lib.dto.common.message.request.QueryDTO;
-import g2pc.core.lib.dto.common.message.response.DataDTO;
 
+import g2pc.core.lib.dto.search.message.request.QueryDTO;
 import java.io.IOException;
 import java.util.List;
 

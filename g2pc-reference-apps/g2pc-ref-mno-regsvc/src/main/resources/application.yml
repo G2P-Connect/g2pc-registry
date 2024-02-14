@@ -9,7 +9,7 @@ spring:
   datasource:
     driverClassName: org.postgresql.Driver
     url: not_set
-    username: postgres
+    username: not_set
     password: not_set
 
     hikari:
@@ -46,45 +46,86 @@ spring:
       exclude: static/**,public/**
 
 server:
-  port: 9002
+  port: not_set
   error:
     include-message: always
 
 spring.data.redis:
   repositories.enabled: false
   host: not_set
-  password: not_set
-  port: 6377
+  password: not_set@99223
+  port: not_set
 
 client:
   api_urls:
-    client_search_api: "http://localhost:8000/private/api/v1/registry/on-search"
-    mno_info_url: "http://localhost:9200/private/api/v1/registry/mobile/info"
+    client_search_api: not_set
+    mno_info_url: not_set
+    client_status_api: not_set
 
 keycloak:
-  data-consumer:
-    url: "https://g2pc-dc-lab.cdpi.dev/auth/realms/data-consumer/protocol/openid-connect/token"
-    client-id: dc-client
+  from-dc:
+    url: not_set
+    client-id: not_set
     client-secret: not_set
-  mobile:
-    admin-url: https://g2pc-dp2-lab.cdpi.dev/auth/realms/master/protocol/openid-connect/token
-    get-client-url: https://g2pc-dp2-lab.cdpi.dev/auth/admin/realms/dp-mobile/clients
-  realm: dp-mobile
-  url: https://g2pc-dp2-lab.cdpi.dev/auth
-  admin:
-    realm:
-      client-id: admin-cli
-      client-secret: not_set
-    client-id: admin-cli
-    client-secret: not_set
-    username: admin
+  dp:
+    url: not_set
+    username: not_set
     password: not_set
+    master:
+      url: not_set
+      getClientUrl: not_set
+      clientId: not_set
+      clientSecret: not_set
+    client:
+      url: not_set
+      realm: not_set
+      clientId: not_set
+      clientSecret: not_set
 
 crypto:
-  consumer:
+  to_dc:
     support_encryption: true
     support_signature: true
-  mobile:
+    password: not_set
+    key_path: not_set
+    id: not_set
+  from_dc:
     support_encryption: true
     support_signature: true
+    password: not_set
+    key_path: not_set
 
+dashboard:
+  dp_dashboard_url: not_set
+  cors_origin_url: not_set
+
+sftp:
+  listener:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+    local:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+  dc:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      outbound_directory: not_set
+
+sunbird:
+  api_urls:
+    response_data_api: not_set
+    response_tracker_api: not_set
+  enabled: false
+  elasticsearch:
+    host: not_set
+    port: not_set
+    scheme: not_set

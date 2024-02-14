@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 public class G2pTokenResponse {
 
-    private String access_token;
-    private String token_type;
-    private String expires_in;
+    private String accessToken;
+    private String tokenType;
+    private String expiresIn;
 }

@@ -60,6 +60,7 @@ spring.data.redis:
 client:
   api_urls:
     client_search_api: not_set
+    client_status_api: not_set
 
 keycloak:
   from_dc:
@@ -80,21 +81,52 @@ keycloak:
       realm: not_set
       clientId: not_set
       clientSecret: not_set
-      realmClientId: not_set
-      realmClientSecret: not_set
 
 crypto:
   to_dc:
-    support_encryption: not_set
-    support_signature: not_set
+    support_encryption: true
+    support_signature: true
     password: not_set
     key_path: not_set
     id: not_set
   from_dc:
-    support_encryption: not_set
-    support_signature: not_set
+    support_encryption: true
+    support_signature: true
     password: not_set
     key_path: not_set
 
 dashboard:
   dp_dashboard_url: not_set
+  cors_origin_url: not_set
+
+sftp:
+  listener:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+    local:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+  dc:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+sunbird:
+  api_urls:
+    response_data_api: not_set
+    response_tracker_api: not_set
+  enabled: true
+  elasticsearch:
+    host: not_set
+    port: not_set
+    scheme: not_set

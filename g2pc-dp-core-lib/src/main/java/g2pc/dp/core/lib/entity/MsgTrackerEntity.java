@@ -2,7 +2,6 @@ package g2pc.dp.core.lib.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,20 +67,11 @@ public class MsgTrackerEntity {
     @Column(name = "locale")
     private String locale;
 
-    @Column(name = "rcvd_count")
-    private Integer rcvdCount;
-
-    @Column(name = "pdng_count")
-    private Integer pdngCount;
-
-    @Column(name = "succ_count")
-    private Integer succCount;
-
-    @Column(name = "rjct_count")
-    private Integer rjctCount;
-
     @Column(name = "raw_message")
     private String rawMessage;
+
+    @Column(name = "protocol")
+    private String protocol;
 
     @Column(insertable = false, updatable = false)
     private Timestamp createdDate;

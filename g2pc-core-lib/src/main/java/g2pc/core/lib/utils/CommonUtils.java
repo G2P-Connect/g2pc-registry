@@ -68,6 +68,24 @@ public class CommonUtils {
     }
 
     /**
+     *  Get status request message string input stream.
+     * @return
+     */
+    public InputStream getStatusRequestMessageString(){
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/StatusRequestMessageSchema.json");
+    }
+
+    /**
+     *  Get status response message string input stream.
+     * @return
+     */
+    public InputStream getStatusResponseMessageString(){
+        return CommonUtils.class.getClassLoader()
+                .getResourceAsStream("schema/StatusResponseMessageSchema.json");
+    }
+
+    /**
      * Generate unique ID
      *
      * @param idType whether transactionId, correlationId or referenceId

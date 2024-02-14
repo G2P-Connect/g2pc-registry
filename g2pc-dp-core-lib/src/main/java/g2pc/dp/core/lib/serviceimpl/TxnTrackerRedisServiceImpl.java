@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,9 +24,8 @@ public class TxnTrackerRedisServiceImpl implements TxnTrackerRedisService {
 
     /**
      * Save a request in Redis cache
-     *
-     * @param cacheDTO required
-     * @param cacheKey required
+     * @param cacheDTO cache dto to save in cache
+     * @param cacheKey cache key for which data is stored
      */
     @Override
     public void saveRequestDetails(CacheDTO cacheDTO, String cacheKey) throws JsonProcessingException {
@@ -38,9 +36,9 @@ public class TxnTrackerRedisServiceImpl implements TxnTrackerRedisService {
     /**
      * Update a request in Redis cache after response
      *
-     * @param cacheKey required
-     * @param status   required
-     * @param cacheDTO required
+     * @param cacheKey cache key for which data is stored
+     * @param status status to be 
+     * @param cacheDTO cache dto to save in cache
      */
     @Override
     public void updateRequestDetails(String cacheKey, String status, CacheDTO cacheDTO) throws JsonProcessingException {

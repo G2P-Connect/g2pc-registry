@@ -1,33 +1,35 @@
 package g2pc.dc.core.lib.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
-import g2pc.core.lib.dto.common.header.HeaderDTO;
-import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.response.ResponseDTO;
-import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
-import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
-import g2pc.dc.core.lib.entity.ResponseTrackerEntity;
-import g2pc.dc.core.lib.repository.ResponseTrackerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import g2pc.core.lib.dto.search.message.response.ResponseDTO;
+import g2pc.core.lib.dto.status.message.response.StatusResponseDTO;
+import g2pc.core.lib.exceptions.G2pcError;
 
-import java.sql.Timestamp;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public interface TxnTrackerService {
 
-    void saveInitialTransaction(List<Map<String, Object>> payloadMapList, String transactionId, String status) throws JsonProcessingException;
+    void saveInitialTransaction(List<Map<String, Object>> payloadMapList, String transactionId, String status, String protocol) throws JsonProcessingException;
 
-    void saveRequestTransaction(String requestString, String regType, String transactionId) throws JsonProcessingException;
+    void saveRequestTransaction(String requestString, String regType, String transactionId, String protocol) throws JsonProcessingException;
 
-    CacheDTO createCache(String data, String status);
+    CacheDTO createCache(String data, String status, String protocol);
 
     void saveCache(CacheDTO cacheDTO, String cacheKey) throws JsonProcessingException;
 
-    void saveRequestInDB(String requestString, String regType) throws JsonProcessingException;
+    G2pcError saveRequestInDB(String requestString, String regType, String protocol,
+                              G2pcError g2pcError, String payloadFilename,
+                              String inboundFilename, Boolean sunbirdEnabled) throws IOException;
 
-    void updateTransactionDbAndCache(ResponseDTO responseDTO) throws JsonProcessingException;
+    G2pcError updateTransactionDbAndCache(ResponseDTO responseDTO, String outboundFilename, Boolean sunbirdEnabled) throws IOException;
+
+    void saveInitialStatusTransaction(String txnType, String transactionId, String status, String protocol) throws JsonProcessingException;
+
+    G2pcError saveRequestInStatusDB(String requestString, String regType) throws IOException;
+
+    G2pcError updateStatusTransactionDbAndCache(StatusResponseDTO statusResponseDTO) throws IOException;
+
 }

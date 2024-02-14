@@ -12,7 +12,6 @@ spring:
     url: not_set
     username: not_set
     password: not_set
-
     hikari:
       data-source-properties:
         stringtype: unspecified
@@ -27,6 +26,13 @@ spring:
         maintainTimeStats: false
         maximum-pool-size: 5
         connection-timeout: 5000
+
+  second-datasource:
+    driverClassName: not_set
+    url: not_set
+    username: not_set
+    password: not_set
+
   jpa:
     properties:
       hibernate:
@@ -53,9 +59,9 @@ server:
 
 spring.data.redis:
   repositories.enabled: false
-  host: localhost
-  password: 123456789
-  port: 6379
+  host: not_set
+  password: not_set
+  port: not_set
 
 keycloak:
   from_dp:
@@ -84,38 +90,86 @@ keycloak:
 
 crypto:
   to_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
     password: not_set
     key_path: not_set
   to_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
     password: not_set
     key_path: not_set
   from_dp_farmer:
-    support_encryption: not_set
-    support_signature: not_set
     password: not_set
     key_path: not_set
-    id: not_set
   from_dp_mobile:
-    support_encryption: not_set
-    support_signature: not_set
     password: not_set
     key_path: not_set
-    id: not_set
+  sample:
+    password: not_set
+    key.path: not_set
 
 registry:
   api_urls:
     farmer_search_api: not_set
     mobile_search_api: not_set
+    farmer_status_api: not_set
+    mobile_status_api: not_set
 
 dashboard:
   left_panel_url: not_set
   right_panel_url: not_set
   bottom_panel_url: not_set
-  post_endpoint_url: not_set
+  post_https_endpoint_url: not_set
   clear_dc_db_endpoint_url: not_set
   clear_dp1_db_endpoint_url: not_set
   clear_dp2_db_endpoint_url: not_set
+  left_panel_data_endpoint_url: not_set
+  sftp_post_endpoint_url: not_set
+  sftp_dc_data_endpoint_url: not_set
+  sftp_dp1_data_endpoint_url: not_set
+  sftp_dp2_data_endpoint_url: not_set
+  dc_status_endpoint_url: not_set
+  sftp_left_panel_url: not_set
+  sftp_right_panel_url: not_set
+  sftp_bottom_panel_url: not_set
+  https_sunbird_left_panel_url: not_set
+  https_sunbird_right_panel_url: not_set
+  https_sunbird_bottom_panel_url: not_set
+  sftp_sunbird_left_panel_url: not_set
+  sftp_sunbird_right_panel_url: not_set
+  sftp_sunbird_bottom_panel_url: not_set
+
+sftp:
+  listener:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+      outbound_directory: not_set
+    local:
+      inbound_directory: not_set
+      outbound_directory: not_set
+
+  dp1:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+
+  dp2:
+    host: not_set
+    port: not_set
+    user: not_set
+    password: not_set
+    remote:
+      inbound_directory: not_set
+
+sunbird:
+  api_urls:
+    response_data_api: not_set
+    response_tracker_api: not_set
+  elasticsearch:
+    host: not_set
+    port: not_set
+    scheme: not_set

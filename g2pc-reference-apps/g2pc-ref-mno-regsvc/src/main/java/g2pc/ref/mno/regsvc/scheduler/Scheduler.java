@@ -5,22 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.QueryDTO;
-import g2pc.core.lib.dto.common.message.request.RequestDTO;
-import g2pc.core.lib.dto.common.message.request.RequestMessageDTO;
-import g2pc.core.lib.dto.common.message.response.DataDTO;
-import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
-import g2pc.core.lib.dto.common.message.response.SearchResponseDTO;
+import g2pc.core.lib.dto.search.message.request.QueryDTO;
+import g2pc.core.lib.dto.search.message.request.RequestDTO;
+import g2pc.core.lib.dto.status.message.request.StatusRequestDTO;
+import g2pc.core.lib.dto.status.message.request.StatusRequestMessageDTO;
 import g2pc.core.lib.enums.HeaderStatusENUM;
 import g2pc.core.lib.exceptions.G2pHttpException;
 import g2pc.core.lib.exceptions.G2pcError;
-import g2pc.core.lib.utils.CommonUtils;
-import g2pc.dp.core.lib.constants.DpConstants;
 import g2pc.dp.core.lib.entity.MsgTrackerEntity;
 import g2pc.dp.core.lib.service.RequestHandlerService;
 import g2pc.dp.core.lib.service.ResponseBuilderService;
 import g2pc.dp.core.lib.service.TxnTrackerDbService;
 import g2pc.dp.core.lib.service.TxnTrackerRedisService;
+import g2pc.dp.core.lib.utils.DpCommonUtils;
 import g2pc.ref.mno.regsvc.constants.Constants;
 import g2pc.ref.mno.regsvc.service.MobileResponseBuilderService;
 import jakarta.transaction.Transactional;
@@ -32,15 +29,22 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.core.io.ResourceLoader;
 
 @Slf4j
 @Service
 public class Scheduler {
 
+    @Value("${sunbird.enabled}")
+    private Boolean sunbirdEnabled;
+
     @Value("${client.api_urls.client_search_api}")
     String onSearchURL;
+
+    @Value("${client.api_urls.client_status_api}")
+    String onStatusURL;
 
     @Autowired
     private RequestHandlerService requestHandlerService;
@@ -49,21 +53,17 @@ public class Scheduler {
     private ResponseBuilderService responseBuilderService;
 
     @Autowired
+    private ResourceLoader resourceLoader;
+    @Autowired
     private MobileResponseBuilderService mobileResponseBuilderService;
 
-    @Value("${keycloak.data-consumer.client-id}")
+    @Value("${keycloak.from-dc.client-id}")
     private String dcClientId;
 
-    @Value("${keycloak.data-consumer.client-secret}")
+    @Value("${keycloak.from-dc.client-secret}")
     private String dcClientSecret;
 
-    @Value("${keycloak.realm}")
-    private String keycloakRealm;
-
-    @Value("${keycloak.url}")
-    private String keycloakURL;
-
-    @Value("${keycloak.data-consumer.url}")
+    @Value("${keycloak.from-dc.url}")
     private String keyClockClientTokenUrl;
 
     @Autowired
@@ -71,6 +71,15 @@ public class Scheduler {
 
     @Autowired
     private TxnTrackerDbService txnTrackerDbService;
+
+    @Value("${crypto.to_dc.id}")
+    private String dpId;
+
+    @Value("${crypto.to_dc.key_path}")
+    private String farmerKeyPath;
+
+    @Autowired
+    private DpCommonUtils dpCommonUtils;
 
     /**
      * This method is a scheduled task that runs every minute.
@@ -80,6 +89,7 @@ public class Scheduler {
      *
      * @throws IOException if an I/O error occurs
      */
+    @SuppressWarnings("unchecked")
     @Scheduled(cron = "0 */1 * ? * *")// runs every 1 min.
     @Transactional
     public void responseScheduler() throws IOException {
@@ -92,11 +102,9 @@ public class Scheduler {
                 String requestData = txnTrackerRedisService.getRequestData(cacheKey);
                 CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
                 if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
+                    String protocol = cacheDTO.getProtocol();
                     RequestDTO requestDTO = objectMapper.readerFor(RequestDTO.class).readValue(cacheDTO.getData());
-                    RequestMessageDTO messageDTO = objectMapper.convertValue(requestDTO.getMessage(), RequestMessageDTO.class);
-                    String transactionId = messageDTO.getTransactionId();
-
-                    MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveRequestDetails(requestDTO);
+                    MsgTrackerEntity msgTrackerEntity = txnTrackerDbService.saveRequestDetails(requestDTO, protocol, sunbirdEnabled);
                     List<QueryDTO> queryDTOList = msgTrackerEntity.getTxnTrackerEntityList().stream()
                             .map(txnTrackerEntity -> {
                                 try {
@@ -106,30 +114,34 @@ public class Scheduler {
                                 }
                             }).toList();
                     List<String> refRecordsStringsList = mobileResponseBuilderService.getRegMobileRecords(queryDTOList);
-
-                    List<SearchResponseDTO> searchResponseDTOList = txnTrackerDbService.getUpdatedSearchResponseList(
-                            requestDTO, refRecordsStringsList);
-
-                    ResponseHeaderDTO headerDTO = responseBuilderService.getResponseHeaderDTO(msgTrackerEntity);
-
-                    ResponseMessageDTO responseMessageDTO = responseBuilderService.buildResponseMessage(transactionId, searchResponseDTOList);
-                    String responseString = responseBuilderService.buildResponseString("signature",
-                            headerDTO, responseMessageDTO);
-                    responseString = CommonUtils.formatString(responseString);
-                    log.info("on-search response = {}", responseString);
-                    //G2pcError g2pcError = responseBuilderService.sendOnSearchResponse(responseString, onSearchURL, dcClientId, dcClientSecret, keyClockClientTokenUrl);
-
-                    //if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
-                    //  throw new G2pHttpException(g2pcError);
-                    //} else {
-                    txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
-                    //}
+                    G2pcError g2pcError = responseBuilderService.buildOnSearchScheduler(refRecordsStringsList, cacheDTO, sunbirdEnabled);
+                    log.info("on-search database updation response from sunbird - " + g2pcError.getCode());
+                    if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
+                        throw new G2pHttpException(g2pcError);
+                    } else {
+                        txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+                    }
                 }
             }
-            //} catch (G2pHttpException e) {
-            //  log.error("Exception thrown from on-search endpoint" + e.getG2PcError().getMessage());
+            List<String> statusCacheKeysList = txnTrackerRedisService.getCacheKeys(Constants.STATUS_CACHE_KEY_SEARCH_STRING);
+            for (String cacheKey : statusCacheKeysList) {
+                String requestData = txnTrackerRedisService.getRequestData(cacheKey);
+                CacheDTO cacheDTO = objectMapper.readerFor(CacheDTO.class).readValue(requestData);
+                if (cacheDTO.getStatus().equals(HeaderStatusENUM.PDNG.toValue())) {
+                    StatusRequestDTO statusRequestDTO = objectMapper.readerFor(StatusRequestDTO.class).readValue(cacheDTO.getData());
+                    StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
+                    G2pcError g2pcError = responseBuilderService.buildOnStatusScheduler(cacheDTO);
+                    log.info("on-status database updation response from sunbird - " + g2pcError.getCode());
+                    if (!g2pcError.getCode().equals(HttpStatus.OK.toString())) {
+                        throw new G2pHttpException(g2pcError);
+                    } else {
+                        txnTrackerDbService.updateMessageTrackerStatusDb(statusRequestMessageDTO.getTransactionId());
+                        txnTrackerRedisService.updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+                    }
+                }
+            }
         } catch (Exception ex) {
-            log.error("Scheduler error : {}", ex);
+            log.error("Exception in responseScheduler: {}", ex.getMessage());
         }
     }
 }

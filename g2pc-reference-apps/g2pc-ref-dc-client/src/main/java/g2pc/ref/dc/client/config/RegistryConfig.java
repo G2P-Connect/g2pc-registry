@@ -1,12 +1,12 @@
 package g2pc.ref.dc.client.config;
 
 import g2pc.core.lib.constants.CoreConstants;
+import g2pc.core.lib.constants.SftpConstants;
 import g2pc.core.lib.enums.SortOrderEnum;
 import g2pc.ref.dc.client.constants.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -68,6 +68,50 @@ public class RegistryConfig {
     @Value("${crypto.to_dp_mobile.password}")
     private String mobileKeyPassword;
 
+    @Value("${sftp.dp1.host}")
+    private String sftpDp1Host;
+
+    @Value("${sftp.dp1.port}")
+    private int sftpDp1Port;
+
+    @Value("${sftp.dp1.user}")
+    private String sftpDp1User;
+
+    @Value("${sftp.dp1.password}")
+    private String sftpDp1Password;
+
+    @Value("${sftp.dp1.remote.inbound_directory}")
+    private String sftpDp1RemoteInboundDirectory;
+
+    @Value("${sftp.dp2.host}")
+    private String sftpDp2Host;
+
+    @Value("${sftp.dp2.port}")
+    private int sftpDp2Port;
+
+    @Value("${sftp.dp2.user}")
+    private String sftpDp2User;
+
+    @Value("${sftp.dp2.password}")
+    private String sftpDp2Password;
+
+    @Value("${sftp.dp2.remote.inbound_directory}")
+    private String sftpDp2RemoteInboundDirectory;
+
+    @Value("${crypto.sample.password}")
+    private String dummyKeyPassword;
+
+    @Value("${crypto.sample.key.path}")
+    private String dummyKeyPath;
+
+    @Value("${registry.api_urls.farmer_status_api}")
+    private String farmerStatusUrl;
+
+    @Value("${registry.api_urls.mobile_status_api}")
+    private String mobileStatusUrl;
+
+
+
     /**
      * Map to represent which query params are required for which registry
      *
@@ -79,11 +123,13 @@ public class RegistryConfig {
         Map<String, String> farmerRegistryMap = new HashMap<>();
         farmerRegistryMap.put("farmer_id", "");
         farmerRegistryMap.put("season", "");
+        farmerRegistryMap.put("status", "");
 
 
         Map<String, String> mobileRegistryMap = new HashMap<>();
         mobileRegistryMap.put("mobile_number", "");
         mobileRegistryMap.put("season", "");
+        mobileRegistryMap.put("status", "");
 
         queryParamsConfig.put(Constants.FARMER_REGISTRY, farmerRegistryMap);
         queryParamsConfig.put(Constants.MOBILE_REGISTRY, mobileRegistryMap);
@@ -95,11 +141,11 @@ public class RegistryConfig {
      *
      * @return Map to represent registry specific config values
      */
-    public Map<String, Object> getRegistrySpecificConfig() {
+    public Map<String, Object> getRegistrySpecificConfig(String isSignEncrypt) {
         Map<String, Object> queryParamsConfig = new HashMap<>();
 
-        Map<String, String> farmerRegistryMap = getFarmerRegistryMap();
-        Map<String, String> mobileRegistryMap = getMobileRegistryMap();
+        Map<String, String> farmerRegistryMap = getFarmerRegistryMap(isSignEncrypt);
+        Map<String, String> mobileRegistryMap = getMobileRegistryMap(isSignEncrypt);
 
         queryParamsConfig.put(Constants.FARMER_REGISTRY, farmerRegistryMap);
         queryParamsConfig.put(Constants.MOBILE_REGISTRY, mobileRegistryMap);
@@ -111,7 +157,7 @@ public class RegistryConfig {
      *
      * @return Map to represent registry specific config values for farmer
      */
-    private Map<String, String> getFarmerRegistryMap() {
+    private Map<String, String> getFarmerRegistryMap(String isSignEncrypt) {
         Map<String, String> farmerRegistryMap = new HashMap<>();
         farmerRegistryMap.put(CoreConstants.QUERY_NAME, "paid_farmer");
         farmerRegistryMap.put(CoreConstants.REG_TYPE, "ns:FARMER_REGISTRY");
@@ -126,10 +172,25 @@ public class RegistryConfig {
         farmerRegistryMap.put(CoreConstants.KEYCLOAK_CLIENT_SECRET, farmerClientSecret);
         farmerRegistryMap.put(CoreConstants.SUPPORT_ENCRYPTION, "" + isFarmerEncrypt);
         farmerRegistryMap.put(CoreConstants.SUPPORT_SIGNATURE, "" + isFarmerSign);
-        farmerRegistryMap.put(CoreConstants.KEY_PATH, farmerKeyPath);
-        farmerRegistryMap.put(CoreConstants.KEY_PASSWORD, farmerKeyPassword);
+        if(isSignEncrypt.equals("2")){
+            farmerRegistryMap.put(CoreConstants.KEY_PATH, dummyKeyPath);
+            farmerRegistryMap.put(CoreConstants.KEY_PASSWORD, dummyKeyPassword);
+        } else {
+            farmerRegistryMap.put(CoreConstants.KEY_PATH, farmerKeyPath);
+            farmerRegistryMap.put(CoreConstants.KEY_PASSWORD, farmerKeyPassword);
+        }
+
         farmerRegistryMap.put(CoreConstants.DP_SEARCH_URL, farmerSearchURL);
         farmerRegistryMap.put(CoreConstants.DP_CLEAR_DB_URL, farmerClearDbURL);
+        farmerRegistryMap.put(SftpConstants.SFTP_HOST, sftpDp1Host);
+        farmerRegistryMap.put(SftpConstants.SFTP_PORT, String.valueOf(sftpDp1Port));
+        farmerRegistryMap.put(SftpConstants.SFTP_USER, sftpDp1User);
+        farmerRegistryMap.put(SftpConstants.SFTP_PASSWORD, sftpDp1Password);
+        farmerRegistryMap.put(SftpConstants.SFTP_SESSION_CONFIG, "no");
+        farmerRegistryMap.put(SftpConstants.SFTP_ALLOW_UNKNOWN_KEYS, String.valueOf(true));
+        farmerRegistryMap.put(SftpConstants.SFTP_REMOTE_INBOUND_DIRECTORY, sftpDp1RemoteInboundDirectory);
+        farmerRegistryMap.put(CoreConstants.DP_STATUS_URL , farmerStatusUrl);
+
         return farmerRegistryMap;
     }
 
@@ -138,7 +199,7 @@ public class RegistryConfig {
      *
      * @return Map to represent registry specific config values for mobile
      */
-    private Map<String, String> getMobileRegistryMap() {
+    private Map<String, String> getMobileRegistryMap(String isSignEncrypt) {
         Map<String, String> mobileRegistryMap = new HashMap<>();
         mobileRegistryMap.put(CoreConstants.QUERY_NAME, "mobile_registered");
         mobileRegistryMap.put(CoreConstants.REG_TYPE, "ns:MOBILE_REGISTRY");
@@ -153,10 +214,24 @@ public class RegistryConfig {
         mobileRegistryMap.put(CoreConstants.KEYCLOAK_CLIENT_SECRET, mobileClientSecret);
         mobileRegistryMap.put(CoreConstants.SUPPORT_ENCRYPTION, "" + isMobileEncrypt);
         mobileRegistryMap.put(CoreConstants.SUPPORT_SIGNATURE, "" + isMobileSign);
-        mobileRegistryMap.put(CoreConstants.KEY_PATH, mobileKeyPath);
-        mobileRegistryMap.put(CoreConstants.KEY_PASSWORD, mobileKeyPassword);
+        if(isSignEncrypt.equals("2")){
+            mobileRegistryMap.put(CoreConstants.KEY_PATH, dummyKeyPath);
+            mobileRegistryMap.put(CoreConstants.KEY_PASSWORD, dummyKeyPassword);
+        }
+        else{
+            mobileRegistryMap.put(CoreConstants.KEY_PATH, mobileKeyPath);
+            mobileRegistryMap.put(CoreConstants.KEY_PASSWORD, mobileKeyPassword);
+        }
         mobileRegistryMap.put(CoreConstants.DP_SEARCH_URL, mobileSearchURL);
         mobileRegistryMap.put(CoreConstants.DP_CLEAR_DB_URL, mobileClearDbURL);
+        mobileRegistryMap.put(SftpConstants.SFTP_HOST, sftpDp2Host);
+        mobileRegistryMap.put(SftpConstants.SFTP_PORT, String.valueOf(sftpDp2Port));
+        mobileRegistryMap.put(SftpConstants.SFTP_USER, sftpDp2User);
+        mobileRegistryMap.put(SftpConstants.SFTP_PASSWORD, sftpDp2Password);
+        mobileRegistryMap.put(SftpConstants.SFTP_SESSION_CONFIG, "no");
+        mobileRegistryMap.put(SftpConstants.SFTP_ALLOW_UNKNOWN_KEYS, String.valueOf(true));
+        mobileRegistryMap.put(SftpConstants.SFTP_REMOTE_INBOUND_DIRECTORY, sftpDp2RemoteInboundDirectory);
+        mobileRegistryMap.put(CoreConstants.DP_STATUS_URL,mobileStatusUrl);
         return mobileRegistryMap;
     }
 }

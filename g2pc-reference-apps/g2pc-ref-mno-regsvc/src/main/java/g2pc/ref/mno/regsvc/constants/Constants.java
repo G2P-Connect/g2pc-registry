@@ -19,5 +19,7 @@ public class Constants {
 
     public static final String CONFIGURATION_MISMATCH_ERROR = "Configurations are not matching ";
 
+    public static final String STATUS_CACHE_KEY_STRING = "status-request-farmer-";
 
+    public static final String STATUS_CACHE_KEY_SEARCH_STRING = "status-request-farmer*";
 }

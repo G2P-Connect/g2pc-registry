@@ -44,7 +44,7 @@
             "enum": ["rjct.reference_id.invalid", "rjct.reference_id.duplicate",
               "rjct.timestamp.invalid" ,"rjct.search_criteria.invalid" ,
               "rjct.filter.invalid" ,"rjct.sort.invalid" ,
-              "rjct.pagination.invalid" ,"rjct.search.too_many_records_found" ,"succ"]
+              "rjct.pagination.invalid" ,"rjct.search.too_many_records_found" ,"succ","record_not_found"]
           },
           "status_reason_message": {
             "type": "string",

@@ -1,13 +1,14 @@
 package g2pc.ref.farmer.regsvc.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
-
 @Getter
 @Setter
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RegRecordFarmerDTO {
 
     @JsonProperty("farmer_id")

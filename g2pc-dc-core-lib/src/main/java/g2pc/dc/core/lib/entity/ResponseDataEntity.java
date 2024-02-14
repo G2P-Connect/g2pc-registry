@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.sql.Timestamp;
 
 @Builder
@@ -49,6 +48,15 @@ public class ResponseDataEntity {
 
     @Column(name = "reg_records")
     private String regRecords;
+
+    @Column(name = "txn_type")
+    private String txnType;
+
+    @Column(name = "attribute_type")
+    private String attributeType;
+
+    @Column(name = "attribute_value")
+    private String attributeValue;
 
     @Column(insertable = false, updatable = false)
     private Timestamp createdDate;

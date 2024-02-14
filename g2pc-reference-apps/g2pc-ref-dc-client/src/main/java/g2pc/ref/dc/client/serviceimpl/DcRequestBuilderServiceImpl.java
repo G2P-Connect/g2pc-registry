@@ -1,44 +1,49 @@
 package g2pc.ref.dc.client.serviceimpl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import g2pc.core.lib.constants.CoreConstants;
+import g2pc.core.lib.constants.SftpConstants;
 import g2pc.core.lib.dto.common.AcknowledgementDTO;
-import g2pc.core.lib.dto.common.header.HeaderDTO;
-import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
-import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.request.*;
+import g2pc.core.lib.dto.search.message.request.SearchCriteriaDTO;
+import g2pc.core.lib.dto.sftp.SftpServerConfigDTO;
+import g2pc.core.lib.dto.status.message.request.TxnStatusRequestDTO;
+import g2pc.core.lib.enums.ActionsENUM;
+import g2pc.core.lib.enums.ExceptionsENUM;
 import g2pc.core.lib.enums.HeaderStatusENUM;
 import g2pc.core.lib.exceptions.G2pcError;
+import g2pc.core.lib.service.ElasticsearchService;
 import g2pc.core.lib.utils.CommonUtils;
+import g2pc.dc.core.lib.constants.DcConstants;
+import g2pc.dc.core.lib.dto.ResponseTrackerDto;
+import g2pc.dc.core.lib.entity.ResponseTrackerEntity;
+import g2pc.dc.core.lib.repository.ResponseTrackerRepository;
 import g2pc.dc.core.lib.service.RequestBuilderService;
 import g2pc.dc.core.lib.service.TxnTrackerService;
 import g2pc.ref.dc.client.config.RegistryConfig;
+import g2pc.ref.dc.client.constants.Constants;
 import g2pc.ref.dc.client.service.DcRequestBuilderService;
-import kong.unirest.HttpResponse;
-import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.lang3.ObjectUtils;
+import org.elasticsearch.action.search.SearchResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
-import java.io.InputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @Slf4j
 public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
+
+    @Value("${sunbird.enabled}")
+    private Boolean sunbirdEnabled;
 
     @Autowired
     private RequestBuilderService requestBuilderService;
@@ -52,6 +57,12 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
     @Autowired
     private ResourceLoader resourceLoader;
 
+    @Autowired
+    ResponseTrackerRepository responseTrackerRepository;
+
+    @Autowired
+    private ElasticsearchService elasticsearchService;
+
     /**
      * Create, save and send a request from payload
      *
@@ -60,103 +71,158 @@ public class DcRequestBuilderServiceImpl implements DcRequestBuilderService {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, G2pcError> generateRequest(List<Map<String, Object>> payloadMapList) throws Exception {
+    public AcknowledgementDTO generateRequest(List<Map<String, Object>> payloadMapList, String protocol,
+                                              String isSignEncrypt, String payloadFilename, String inboundFilename) throws Exception {
         Map<String, G2pcError> g2pcErrorMap = new HashMap<>();
 
-        String transactionId = CommonUtils.generateUniqueId("T");
-
-        txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
-
         List<Map<String, Object>> queryMapList = requestBuilderService.createQueryMap(payloadMapList, registryConfig.getQueryParamsConfig().entrySet());
-        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig().entrySet()) {
+
+        for (Map.Entry<String, Object> configEntryMap : registryConfig.getRegistrySpecificConfig(isSignEncrypt).entrySet()) {
+
             List<Map<String, Object>> queryMapFilteredList = queryMapList.stream()
                     .map(map -> map.entrySet().stream()
                             .filter(entry -> entry.getKey().equals(configEntryMap.getKey()))
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))).toList();
 
-            Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig().get(configEntryMap.getKey());
+            Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig(isSignEncrypt).get(configEntryMap.getKey());
             List<SearchCriteriaDTO> searchCriteriaDTOList = new ArrayList<>();
             for (Map<String, Object> queryParamsMap : queryMapFilteredList) {
                 SearchCriteriaDTO searchCriteriaDTO = requestBuilderService.getSearchCriteriaDTO(queryParamsMap, registrySpecificConfigMap);
                 searchCriteriaDTOList.add(searchCriteriaDTO);
             }
 
-            String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId);
+            String transactionId = CommonUtils.generateUniqueId("T");
+            String requestString = requestBuilderService.buildRequest(searchCriteriaDTOList, transactionId, ActionsENUM.SEARCH);
+            String encryptedSalt = "";
+            G2pcError g2pcError = new G2pcError();
+            switch (isSignEncrypt) {
+                case "0":
+                    break;
+                case "1":
+                    encryptedSalt = "salt";
+                case "2":
+                    break;
+            }
+            try {
+                if (protocol.equals(CoreConstants.SEND_PROTOCOL_HTTPS)) {
+                    Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+
+                    InputStream fis = resource.getInputStream();
+                    g2pcError = requestBuilderService.sendRequest(requestString,
+                            registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
+                            registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                            fis, encryptedSalt,
+                            registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), CoreConstants.SEARCH_TXN_TYPE);
+                    g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
+                    log.info("DP_SEARCH_URL = {}", registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString());
+                } else if (protocol.equals(CoreConstants.SEND_PROTOCOL_SFTP)) {
+                    SftpServerConfigDTO sftpServerConfigDTO = new SftpServerConfigDTO();
+                    sftpServerConfigDTO.setUser(registrySpecificConfigMap.get(SftpConstants.SFTP_USER).toString());
+                    sftpServerConfigDTO.setHost(registrySpecificConfigMap.get(SftpConstants.SFTP_HOST).toString());
+                    sftpServerConfigDTO.setPort(Integer.parseInt(registrySpecificConfigMap.get(SftpConstants.SFTP_PORT).toString()));
+                    sftpServerConfigDTO.setPassword(registrySpecificConfigMap.get(SftpConstants.SFTP_PASSWORD).toString());
+                    sftpServerConfigDTO.setStrictHostKeyChecking(registrySpecificConfigMap.get(SftpConstants.SFTP_SESSION_CONFIG).toString());
+                    sftpServerConfigDTO.setRemoteInboundDirectory(registrySpecificConfigMap.get(SftpConstants.SFTP_REMOTE_INBOUND_DIRECTORY).toString());
+
+                    Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
+                    InputStream fis = resource.getInputStream();
+                    inboundFilename = UUID.randomUUID() + ".json";
+                    g2pcError = requestBuilderService.sendRequestSftp(requestString,
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
+                            Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
+                            fis, encryptedSalt,
+                            registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), CoreConstants.SEARCH_TXN_TYPE,
+                            sftpServerConfigDTO, inboundFilename);
+                    g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
+                    if (g2pcError != null && g2pcError.getCode().contains("err")) {
+                        log.info("Uploaded failed for : {}", registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                        throw new Exception("Uploaded failed for : " + registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                    } else {
+                        log.info("Uploaded to inbound of : {}", registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                    }
+                }
+                txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue(), protocol);
+                txnTrackerService.saveRequestTransaction(requestString,
+                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId, protocol);
+               G2pcError g2pcErrorDb= txnTrackerService.saveRequestInDB(requestString,
+                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), protocol, g2pcError,
+                        payloadFilename, inboundFilename,sunbirdEnabled);
+               g2pcErrorMap.put(configEntryMap.getKey(),g2pcErrorDb);
+            } catch (Exception e) {
+                log.error(Constants.GENERATE_REQUEST_ERROR_MESSAGE + ": {}", e.getMessage());
+            }
+        }
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        acknowledgementDTO.setMessage(g2pcErrorMap);
+        acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+        return acknowledgementDTO;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public AcknowledgementDTO generateStatusRequest(String transactionID, String transactionType, String protocol) throws Exception {
+        AcknowledgementDTO acknowledgementDTO = new AcknowledgementDTO();
+        String statusRequestTransactionId = CommonUtils.generateUniqueId("T");
+        ObjectMapper objectMapper = new ObjectMapper();
+        String encryptedSalt = "";
+        Map<String, String> fieldValues = new HashMap<>();
+        fieldValues.put("transaction_id.keyword",transactionID);
+        SearchResponse responseTrackerSearchResponse = elasticsearchService.exactSearch("response_tracker", fieldValues);
+        if (responseTrackerSearchResponse.getHits().getHits().length > 0) {
+
+            String responseTrackerDtoString = responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString();
+            ResponseTrackerDto responseTrackerDto  = objectMapper.readerFor(ResponseTrackerDto.class).
+                    readValue(responseTrackerDtoString);
+            String registryType = responseTrackerDto.getRegistryType().substring(3).toLowerCase();
+            Map<String, Object> registrySpecificConfigMap = (Map<String, Object>) registryConfig.getRegistrySpecificConfig("").get(registryType);
+            TxnStatusRequestDTO txnStatusRequestDTO = requestBuilderService.buildTransactionRequest(transactionID, transactionType);
+            String statusRequestString = requestBuilderService.buildStatusRequest(txnStatusRequestDTO, statusRequestTransactionId, ActionsENUM.STATUS);
+            G2pcError g2pcError = null;
             try {
                 Resource resource = resourceLoader.getResource(registrySpecificConfigMap.get(CoreConstants.KEY_PATH).toString());
-                String encryptedSalt = "";
                 InputStream fis = resource.getInputStream();
-                G2pcError g2pcError = requestBuilderService.sendRequest(requestString,
-                        registrySpecificConfigMap.get(CoreConstants.DP_SEARCH_URL).toString(),
+                g2pcError = requestBuilderService.sendRequest(statusRequestString,
+                        registrySpecificConfigMap.get(CoreConstants.DP_STATUS_URL).toString(),
                         registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_ID).toString(),
                         registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_CLIENT_SECRET).toString(),
                         registrySpecificConfigMap.get(CoreConstants.KEYCLOAK_URL).toString(),
                         Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_ENCRYPTION).toString()),
                         Boolean.parseBoolean(registrySpecificConfigMap.get(CoreConstants.SUPPORT_SIGNATURE).toString()),
                         fis, encryptedSalt,
-                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString());
-                g2pcErrorMap.put(configEntryMap.getKey(), g2pcError);
-
-                txnTrackerService.saveInitialTransaction(payloadMapList, transactionId, HeaderStatusENUM.RCVD.toValue());
-                txnTrackerService.saveRequestTransaction(requestString,
-                        registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), transactionId);
-                txnTrackerService.saveRequestInDB(requestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+                        registrySpecificConfigMap.get(CoreConstants.KEY_PASSWORD).toString(), "status");
+                log.info("" + g2pcError);
             } catch (Exception e) {
-                log.error("Exception in generateRequest: {}", e);
+                log.error(Constants.GENERATE_REQUEST_ERROR_MESSAGE, e);
             }
+            txnTrackerService.saveInitialStatusTransaction(transactionType, statusRequestTransactionId, HeaderStatusENUM.RCVD.toValue(), protocol);
+            txnTrackerService.saveRequestTransaction(statusRequestString,
+                    registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString(), statusRequestTransactionId, protocol);
+            txnTrackerService.saveRequestInStatusDB(statusRequestString, registrySpecificConfigMap.get(CoreConstants.REG_TYPE).toString());
+            acknowledgementDTO.setMessage(g2pcError);
+            acknowledgementDTO.setStatus(HeaderStatusENUM.RCVD.toValue());
+        } else {
+            G2pcError g2pcError = new G2pcError();
+            g2pcError.setCode(ExceptionsENUM.ERROR_REQUEST_NOT_FOUND.toValue());
+            g2pcError.setMessage("Data for transaction id " + transactionID + "is not found");
+            acknowledgementDTO.setMessage(g2pcError);
         }
-        //TODO: convert returning map to acknowledgementDTO
-        return g2pcErrorMap;
+        return acknowledgementDTO;
     }
 
-    /**
-     * Create a payload for request
-     *
-     * @param payloadFile csv file containing query params data
-     * @return acknowledgement of the request
-     */
-    @Override
-    public Map<String, G2pcError> generatePayloadFromCsv(MultipartFile payloadFile) throws Exception {
-        Reader reader = new BufferedReader(new InputStreamReader(payloadFile.getInputStream()));
+
+    public String demoTestEncryptionSignature(File payloadFile) throws IOException {
+        Reader reader = null;
+        reader = new BufferedReader(new FileReader(payloadFile));
         CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);
-        List<Map<String, Object>> payloadMapList = getPayloadMapList(csvParser);
-        Map<String, G2pcError> acknowledgement = new HashMap<>();
-        if (ObjectUtils.isNotEmpty(payloadMapList)) {
-            acknowledgement = generateRequest(payloadMapList);
-        }
-        //TODO: convert returning map to acknowledgementDTO
-        return acknowledgement;
-    }
-
-    private static List<Map<String, Object>> getPayloadMapList(CSVParser csvParser) {
         List<CSVRecord> csvRecordList = csvParser.getRecords();
-        CSVRecord headerRecord = csvRecordList.get(0);
-        List<String> headerList = new ArrayList<>();
-        for (int i = 0; i < headerRecord.size(); i++) {
-            headerList.add(headerRecord.get(i));
-        }
-        List<Map<String, Object>> payloadMapList = new ArrayList<>();
-        for (int i = 1; i < csvRecordList.size(); i++) {
-            CSVRecord csvRecord = csvRecordList.get(i);
-            Map<String, Object> payloadMap = new HashMap<>();
-            for (int j = 0; j < headerRecord.size(); j++) {
-                payloadMap.put(headerList.get(j), csvRecord.get(j));
-            }
-            payloadMapList.add(payloadMap);
-        }
-        return payloadMapList;
-    }
+        CSVRecord headerRecord = (CSVRecord) csvRecordList.get(0);
 
-    private void sendRequestDemo(String requestString, String uri) {
-        try {
-            HttpResponse<String> response = Unirest.post(uri)
-                    .header("Content-Type", "application/json")
-                    .body(requestString)
-                    .asString();
-            log.info("request send response status = {}", response.getStatus());
-        } catch (Exception ex) {
-            log.error("request send error ");
-        }
+        return headerRecord.get(headerRecord.size() - 1);
+
     }
 }
 

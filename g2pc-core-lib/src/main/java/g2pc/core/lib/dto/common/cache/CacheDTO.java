@@ -16,6 +16,9 @@ public class CacheDTO {
     @JsonProperty("status")
     private String status;
 
+    @JsonProperty("protocol")
+    private String protocol;
+
     @JsonProperty("created_date")
     private String createdDate;
 

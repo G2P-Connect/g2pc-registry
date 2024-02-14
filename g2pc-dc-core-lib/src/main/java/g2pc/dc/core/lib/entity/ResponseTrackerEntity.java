@@ -2,7 +2,6 @@ package g2pc.dc.core.lib.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +65,18 @@ public class ResponseTrackerEntity {
 
     @Column(name = "registry_type")
     private String registryType;
+
+    @Column(name = "protocol")
+    private String protocol;
+
+    @Column(name = "payload_filename")
+    private String payloadFilename;
+
+    @Column(name = "inbound_filename")
+    private String inboundFilename;
+
+    @Column(name = "outbound_filename")
+    private String outboundFilename;
 
     @Column(insertable = false, updatable = false)
     private Timestamp createdDate;

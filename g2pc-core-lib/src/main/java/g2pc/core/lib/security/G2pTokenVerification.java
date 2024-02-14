@@ -26,11 +26,11 @@ public class G2pTokenVerification extends OncePerRequestFilter {
 
     /**
      * Method to validate token
-     * @param httpRequest
-     * @param httpResponse
-     * @param filterChain
-     * @throws ServletException
-     * @throws IOException
+     * @param httpRequest httpRequest
+     * @param httpResponse httpResponse
+     * @param filterChain filterChain
+     * @throws ServletException ServletException
+     * @throws IOException IOException
      */
     @Override
     protected void doFilterInternal(HttpServletRequest httpRequest, HttpServletResponse httpResponse, FilterChain filterChain) throws ServletException, IOException

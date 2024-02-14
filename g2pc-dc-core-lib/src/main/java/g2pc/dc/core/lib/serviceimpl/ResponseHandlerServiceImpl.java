@@ -7,9 +7,12 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.dto.common.cache.CacheDTO;
+import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
 import g2pc.core.lib.dto.common.header.ResponseHeaderDTO;
-import g2pc.core.lib.dto.common.message.response.ResponseMessageDTO;
+import g2pc.core.lib.dto.search.message.request.ResponseMessageDTO;
+import g2pc.core.lib.dto.status.message.response.StatusResponseMessageDTO;
 import g2pc.core.lib.exceptions.G2pcError;
 import g2pc.core.lib.exceptions.G2pcValidationException;
 import g2pc.core.lib.utils.CommonUtils;
@@ -26,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.commons.codec.Resources.getInputStream;
+
 /**
  * The type Response handler service.
  */
@@ -33,12 +38,16 @@ import java.util.Set;
 @Slf4j
 public class ResponseHandlerServiceImpl implements ResponseHandlerService {
 
-    @Autowired
-    private CommonUtils commonUtils;
+
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
+    /**
+     *
+     * @param cacheKey the cache key to update data
+     * @throws JsonProcessingException exception might be thrown
+     */
     @Override
     public void updateCache(String cacheKey) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -51,58 +60,6 @@ public class ResponseHandlerServiceImpl implements ResponseHandlerService {
         val.set(cacheKey, new ObjectMapper().writeValueAsString(cacheDTO));
     }
 
-    @Override
-    public void validateResponseHeader(ResponseHeaderDTO responseHeaderDTO) throws G2pcValidationException, JsonProcessingException {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String headerInfoString = new ObjectMapper()
-                .writerWithDefaultPrettyPrinter()
-                .writeValueAsString(responseHeaderDTO);
-        InputStream schemaStream = commonUtils.getResponseHeaderString();
-        JsonNode jsonNodeMessage = objectMapper.readTree(headerInfoString);
-        JsonSchema schemaMessage = null;
-        if(schemaStream !=null){
-            schemaMessage  = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
-                    getSchema(schemaStream);
-        }
-        Set<ValidationMessage> errorMessage = schemaMessage.validate(jsonNodeMessage);
-        List<G2pcError> errorCombinedMessage= new ArrayList<>();
-        for (ValidationMessage error : errorMessage){
-            log.info("Validation errors" + error );
-            errorCombinedMessage.add(new G2pcError("",error.getMessage()));
 
-        }
-        if (errorMessage.size()>0){
-            throw new G2pcValidationException(errorCombinedMessage);
-        }
-
-    }
-
-    @Override
-    public void validateResponseMessage(ResponseMessageDTO messageDTO) throws G2pcValidationException, JsonProcessingException {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String messageString = new ObjectMapper()
-                .writerWithDefaultPrettyPrinter()
-                .writeValueAsString(messageDTO);
-        log.info("MessageString -> " + messageString);
-        InputStream schemaStream = commonUtils.getResponseMessageString();
-        JsonNode jsonNodeMessage = objectMapper.readTree(messageString);
-        JsonSchema schemaMessage = null;
-        if(schemaStream !=null){
-            schemaMessage  = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4).
-                    getSchema(schemaStream);
-        }
-        Set<ValidationMessage> errorMessage = schemaMessage.validate(jsonNodeMessage);
-        List<G2pcError> errorCombinedMessage= new ArrayList<>();
-        for (ValidationMessage error : errorMessage){
-            log.info("Validation errors" + error );
-            errorCombinedMessage.add(new G2pcError("",error.getMessage()));
-
-        }
-        if (errorMessage.size()>0){
-            throw new G2pcValidationException(errorCombinedMessage);
-        }
-
-    }
 }

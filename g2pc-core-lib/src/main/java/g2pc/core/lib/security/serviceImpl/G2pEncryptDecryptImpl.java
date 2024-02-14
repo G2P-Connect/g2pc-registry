@@ -34,12 +34,12 @@ public class G2pEncryptDecryptImpl implements G2pEncryptDecrypt {
     public  String g2pEncrypt(String data, String key) throws Exception {
         IvParameterSpec ivParameterSpec = RandomIVGenerator.generateIv();
 
-        byte[] keyBytes = key.getBytes("UTF-8");
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         SecretKey secretKey = new SecretKeySpec(keyBytes, AlgorithmENUM.AES.toValue());
 
         Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
-        byte[] encryptedData = aesCipher.doFinal(data.getBytes("UTF-8"));
+        byte[] encryptedData = aesCipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
 
         String ivStr = Base64.getEncoder().encodeToString(ivParameterSpec.getIV());
         String encryptedDataStr = Base64.getEncoder().encodeToString(encryptedData);
@@ -67,14 +67,14 @@ public class G2pEncryptDecryptImpl implements G2pEncryptDecrypt {
         byte[] ivBytes = Base64.getDecoder().decode(ivStr);
         byte[] encryptedDataBytes = Base64.getDecoder().decode(encryptedDataStr);
 
-        byte[] keyBytes = key.getBytes("UTF-8");
+        byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
         SecretKey secretKey = new SecretKeySpec(keyBytes, AlgorithmENUM.AES.toValue());
 
         Cipher aesCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         aesCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(ivBytes));
         byte[] decryptedDataBytes = aesCipher.doFinal(encryptedDataBytes);
 
-        return new String(decryptedDataBytes, "UTF-8");
+        return new String(decryptedDataBytes, StandardCharsets.UTF_8);
     }
 
     /**
