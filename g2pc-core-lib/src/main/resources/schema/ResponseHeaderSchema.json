@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "header response schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "version" : {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "message_ts": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "action": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "status" : {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "status_reason_code" : {
+      "type" : [ "string", "null" ],
+      "enum": ["rjct.reference_id.invalid", "rjct.reference_id.duplicate",
+        "rjct.timestamp.invalid" ,"rjct.search_criteria.invalid" ,
+        "rjct.filter.invalid" ,"rjct.sort.invalid" ,
+        "rjct.pagination.invalid" ,"rjct.search.too_many_records_found","succ"]
+    },
+    "status_reason_message": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "null" }
+      ],
+      "minLength": 0,
+      "maxLength": 99
+    },
+    "total_count": {
+      "type": "number"
+    },
+    "completed_count": {
+      "type": "number"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "receiver_id": {
+      "type": "string"
+    },
+    "is_msg_encrypted": {
+      "type": "boolean"
+    },
+    "meta": {
+      "type": [ "object", "null" ]
+    }
+  },
+  "required": ["message_id","message_ts","action","total_count"],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

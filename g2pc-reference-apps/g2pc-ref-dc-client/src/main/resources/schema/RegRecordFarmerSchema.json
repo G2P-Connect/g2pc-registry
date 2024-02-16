@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Message schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties": {
+    "farmer_id": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "farmer_name": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "season": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "payment_status": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "payment_date": {
+      "type": "string",
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "payment_amount": {
+      "type": "number"
+    }
+  }  ,
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

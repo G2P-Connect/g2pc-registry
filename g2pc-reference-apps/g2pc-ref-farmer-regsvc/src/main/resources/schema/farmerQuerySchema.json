@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Query schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+      "properties": {
+        "query_name" : {
+          "type": "string"
+        },
+        "query_params": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "$ref": "#/definitions/nonEmptyString",
+              "type": "string"
+            },
+            "farmer_id": {
+              "type": "string",
+              "items": {
+                "$ref": "#/definitions/nonEmptyString",
+                "type": "string"
+              }
+            },
+            "season": {
+              "$ref": "#/definitions/nonEmptyString",
+              "type": "string"
+            }
+          },
+          "required": ["farmer_id","season"]
+        }
+      },
+  "required": ["query_params"],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+

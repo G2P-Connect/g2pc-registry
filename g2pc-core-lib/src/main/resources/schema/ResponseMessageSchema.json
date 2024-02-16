@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Message schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties" : {
+    "type": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "correlation_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "search_response" : {
+      "type": "array",
+      "items":  [{
+        "type" : "object",
+        "properties" : {
+          "reference_id": {
+            "type": "string",
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "timestamp": {
+            "type": "string",
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["rcvd","pdng","succ","rjct"],
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "status_reason_code" : {
+            "type": "string",
+            "enum": ["rjct.reference_id.invalid", "rjct.reference_id.duplicate",
+              "rjct.timestamp.invalid" ,"rjct.search_criteria.invalid" ,
+              "rjct.filter.invalid" ,"rjct.sort.invalid" ,
+              "rjct.pagination.invalid" ,"rjct.search.too_many_records_found" ,"succ","record_not_found"]
+          },
+          "status_reason_message": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 99
+          },
+          "data" : {
+            "type": "object",
+            "properties": {
+              "version" : {
+                "type": "string"
+              },
+              "reg_type": {
+                "type": "string"
+              },
+              "reg_sub_type": {
+                "type": "string"
+              },
+              "reg_record_type": {
+                "type": "string"
+              }
+            },
+            "required": ["reg_type","reg_record_type"]
+          },
+          "pagination" : {
+            "type": "object",
+            "properties": {
+              "page_size": {
+                "type": "number"
+              },
+              "page_number": {
+                "type": "number"
+              }
+            },
+            "required": ["page_size"]
+          },
+          "locale" : {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference_id" ,"timestamp" , "status"
+        ]
+      }]
+    }
+  } ,
+  "required": [
+    "transaction_id","correlation_id" , "search_response"
+  ],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+

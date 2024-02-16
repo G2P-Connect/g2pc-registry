@@ -1,0 +1,43 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+actor Schedular
+participant Scheduler
+participant FarmerResponseBuilderService
+participant TxnTrackerRedisService
+participant TxnTrackerDbService
+participant MsgTrackerEntity
+participant ResponseBuilderService
+
+
+Schedular -> Scheduler
+Scheduler -> TxnTrackerRedisService : getCacheKeys(Constants.CACHE_KEY_SEARCH_STRING);
+TxnTrackerRedisService -> Scheduler : return cacheKeysList;
+Scheduler ->Scheduler : forEach(cacheKeysList) loop
+Scheduler -> TxnTrackerRedisService : getRequestData(cacheKey);
+TxnTrackerRedisService -> Scheduler : return requestData;
+Scheduler ->Scheduler : if( requestData.getStatus == PDNG)
+Scheduler -> TxnTrackerDbService : txnTrackerDbService.saveRequestDetails(requestDTO);
+TxnTrackerDbService -> Scheduler : return msgTrackerEntity;
+Scheduler -> MsgTrackerEntity : getTxnTrackerEntityList()
+MsgTrackerEntity ->Scheduler : return queryDTOList
+Scheduler -> FarmerResponseBuilderService : getRegFarmerRecords(queryDTOList)
+FarmerResponseBuilderService ->Scheduler : return refRecordsStringsList
+Scheduler -> TxnTrackerDbService : getUpdatedSearchResponseList(requestDTO, refRecordsStringsList);
+TxnTrackerDbService -> Scheduler : return searchResponseDTOList
+Scheduler -> ResponseBuilderService : getResponseHeaderDTO(msgTrackerEntity)
+ResponseBuilderService -> Scheduler : return headerDTO;
+Scheduler -> ResponseBuilderService : buildResponseMessage(transactionId, searchResponseDTOList);
+ResponseBuilderService -> Scheduler : return messageDTO;
+Scheduler -> ResponseBuilderService : buildResponseString("signature",headerDTO, responseMessageDTO);
+ResponseBuilderService -> Scheduler : return responseString;
+Scheduler -> ResponseBuilderService : sendOnSearchResponse(responseString, onSearchURL,dcClientId,dcClientSecret ,keyClockClientTokenUrl);
+ResponseBuilderService -> Scheduler : return G2pcError;
+Scheduler -> Scheduler : if(G2pcError!=200)
+Scheduler->Scheduler :  throw new G2pHttpException(g2pcError);
+Scheduler -> Scheduler : else
+Scheduler -> TxnTrackerRedisService : updateRequestDetails(cacheKey, HeaderStatusENUM.SUCC.toValue(), cacheDTO);
+
+
+
+@enduml

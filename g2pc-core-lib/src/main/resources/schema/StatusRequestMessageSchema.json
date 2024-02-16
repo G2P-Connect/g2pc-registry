@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Message schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties" : {
+    "type": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "txnstatus_request" :{
+      "type" : "object",
+      "properties" : {
+        "reference_id": {
+          "type": "string",
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "txn_type" : {
+          "type" : [ "string", "null" ],
+          "enum": ["search","subscribe","unsubscribe"],
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "attribute_type" : {
+          "type" : [ "string", "null" ],
+          "enum": ["transaction_id","reference_id_list","correlation_id","subscription_code_list"],
+          "$ref": "#/definitions/nonEmptyString"
+        },
+        "attribute_value" : {
+          "type": ["object","string"],
+          "$ref": "#/definitions/nonEmptyString"
+        }
+      }
+    }
+  } ,
+  "required": [
+    "transaction_id" , "txnstatus_request"
+  ],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+

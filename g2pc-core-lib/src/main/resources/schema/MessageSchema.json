@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft-04/schema#",
+  "$id": "https://example.com/message.schema.json",
+  "title": "Message schema",
+  "description": "",
+  "additionalProperties": false,
+  "type": "object",
+  "properties" : {
+    "type": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type" : "string",
+      "minLength": 0,
+      "maxLength": 99,
+      "$ref": "#/definitions/nonEmptyString"
+    },
+    "search_request" :{
+      "type": "array",
+      "items" : [{
+
+        "type" : "object",
+        "properties" : {
+          "reference_id": {
+            "type": "string",
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "timestamp": {
+            "type": "string",
+            "$ref": "#/definitions/nonEmptyString"
+          },
+          "search_criteria" : {
+            "type": "object" ,
+            "properties": {
+              "version": {
+                "type": "string"
+              },
+              "reg_type": {
+                "type": "string",
+                "$ref": "#/definitions/nonEmptyString"
+              },
+              "reg_sub_type" : {
+                "type": "string"
+              },
+              "query_type": {
+                "type": "string",
+                "$ref": "#/definitions/nonEmptyString",
+                "enum": ["namedQuery","idtype","predicate"]
+              },
+
+              "sort" : {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "object" ,
+                    "properties": {
+                      "attribute_name" : {
+                        "type": "string"
+                      },
+                      "sort_order" : {
+                        "type": "string",
+                        "enum": ["asc" , "desc"]
+                      }
+                    }
+                  }
+                ]
+              },
+              "pagination" : {
+                "type": "object",
+                "properties": {
+                  "page_size": {
+                    "type": "number"
+                  },
+                  "page_number": {
+                    "type": "number"
+                  }
+                },
+                "required": ["page_size"]
+              },
+              "consent": {
+                "type": "object"
+              },
+              "authorize": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "reg_type" ,"query_type"
+            ]
+          },
+          "locale" : {
+            "type": "string"
+
+          }
+        },
+        "required": [
+          "reference_id" ,"timestamp" , "search_criteria"
+        ]
+
+
+      }]
+    }
+  } ,
+  "required": [
+    "transaction_id" , "search_request"
+  ],
+  "definitions": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+
