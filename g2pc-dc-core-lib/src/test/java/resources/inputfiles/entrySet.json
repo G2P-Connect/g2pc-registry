@@ -1,0 +1,13 @@
+[ {
+  "mobile_registry" : {
+    "season" : "",
+    "mobile_number" : "",
+    "status" : ""
+  }
+}, {
+  "farmer_registry" : {
+    "farmer_id" : "",
+    "season" : "",
+    "status" : ""
+  }
+} ]

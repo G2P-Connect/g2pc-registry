@@ -1,0 +1,124 @@
+{
+"signature" : "new signature to be generated for request",
+"header" : {
+"type" : "requestHeader",
+"version" : "1.0.0",
+"action" : "search",
+"meta" : {
+"data" : { }
+},
+"message_id" : "M256-6373-0636-4128-7614",
+"message_ts" : "2024-02-21T12:15:11+05:30",
+"total_count" : 21800,
+"sender_id" : "spp.example.org",
+"receiver_id" : "pymts.example.org",
+"is_msg_encrypted" : false,
+"sender_uri" : "https://spp.example.org/{namespace}/callback/on-search"
+},
+"message" : {
+"transaction_id" : "T493-2562-1872-3747-4865",
+"search_request" : [ {
+"reference_id" : "R685-2067-9474-0808-1135",
+"timestamp" : "2024-02-21T12:15:11+05:30",
+"search_criteria" : {
+"version" : "1.0.0",
+"reg_type" : "ns:FARMER_REGISTRY",
+"reg_sub_type" : "",
+"query_type" : "namedQuery",
+"query" : {
+"query_name" : "paid_farmer",
+"query_params" : {
+"farmer_id" : "F-1",
+"season" : "2023-xyz",
+"status" : ""
+}
+},
+"sort" : [ {
+"attribute_name" : "farmer_id",
+"sort_order" : "asc"
+} ],
+"pagination" : {
+"page_size" : 10,
+"page_number" : 1
+},
+"consent" : {
+"ts" : null,
+"purpose" : null
+},
+"authorize" : {
+"ts" : null,
+"purpose" : null
+}
+},
+"locale" : "en"
+}, {
+"reference_id" : "R221-3724-8616-1028-0859",
+"timestamp" : "2024-02-21T12:15:11+05:30",
+"search_criteria" : {
+"version" : "1.0.0",
+"reg_type" : "ns:FARMER_REGISTRY",
+"reg_sub_type" : "",
+"query_type" : "namedQuery",
+"query" : {
+"query_name" : "paid_farmer",
+"query_params" : {
+"farmer_id" : "F-2",
+"season" : "2023-xyz",
+"status" : ""
+}
+},
+"sort" : [ {
+"attribute_name" : "farmer_id",
+"sort_order" : "asc"
+} ],
+"pagination" : {
+"page_size" : 10,
+"page_number" : 1
+},
+"consent" : {
+"ts" : null,
+"purpose" : null
+},
+"authorize" : {
+"ts" : null,
+"purpose" : null
+}
+},
+"locale" : "en"
+}, {
+"reference_id" : "R533-0843-7189-4175-4942",
+"timestamp" : "2024-02-21T12:15:11+05:30",
+"search_criteria" : {
+"version" : "1.0.0",
+"reg_type" : "ns:FARMER_REGISTRY",
+"reg_sub_type" : "",
+"query_type" : "namedQuery",
+"query" : {
+"query_name" : "paid_farmer",
+"query_params" : {
+"farmer_id" : "F-3",
+"season" : "2023-xyz",
+"status" : ""
+}
+},
+"sort" : [ {
+"attribute_name" : "farmer_id",
+"sort_order" : "asc"
+} ],
+"pagination" : {
+"page_size" : 10,
+"page_number" : 1
+},
+"consent" : {
+"ts" : null,
+"purpose" : null
+},
+"authorize" : {
+"ts" : null,
+"purpose" : null
+}
+},
+"locale" : "en"
+} ]
+}
+}

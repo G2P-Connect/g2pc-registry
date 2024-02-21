@@ -22,6 +22,11 @@ import java.util.Set;
 
 public interface RequestBuilderService {
 
+    public String createSignature(boolean isEncrypt, boolean isSign,
+                                  String requestString, InputStream fis, String encryptionSalt,
+                                  String p12Password, String txnType) throws Exception;
+
+
     List<Map<String, Object>> createQueryMap(List<Map<String, Object>> payloadMapList, Set<Map.Entry<String, Object>> entrySet) throws JsonProcessingException;
 
     SearchCriteriaDTO getSearchCriteriaDTO(Map<String, Object> queryParamsMap, Map<String, Object> registrySpecificConfigMap);
@@ -35,10 +40,6 @@ public interface RequestBuilderService {
     G2pcError sendRequest(String requestString, String uri, String clientId, String clientSecret,
                           String keyClockClientTokenUrl, boolean isEncrypt, boolean isSign, InputStream fis,
                           String encryptedSalt, String p12Password, String txnType) throws Exception;
-
-    CacheDTO createCache(String data, String status, String protocol);
-
-    void saveCache(CacheDTO cacheDTO, String cacheKey) throws JsonProcessingException;
 
     public void saveToken(String cacheKey, TokenExpiryDto tokenExpiryDto) throws JsonProcessingException;
 

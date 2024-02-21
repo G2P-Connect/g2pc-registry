@@ -11,5 +11,4 @@ public class G2pcDcCoreLibraryApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(G2pcDcCoreLibraryApplication.class, args);
 	}
-
 }

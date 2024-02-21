@@ -1,0 +1,107 @@
+{
+  "signature" : "epf7oB7XZDV1m7TqqunY7FiX6UorUMRUuT9saGENO0MTMNkublBBGuj3cLkVOBSdoTLp0umrjdIaTZq68kR4WazTryW48mhL5PIflmYFHn7ZTJZz7Kim/WgPmniuxKEt2PqNZnNLPF9ZpjwtRqfI1/eJwBZafZi0KcQU6jJDuRL/+lqCUychME1g/pDzv0sNLlzY12FrPXRz4fSqjS9uhyljL2vO0Ybg1DlqdebTJcO9lEiY4zlfmNAw4Yr0J/NiOF4T+6fExaj0cQIBZZ8WV/ghTWL+dcqtWseChqGwFwtkLmmvwgncKgE6ep5j/RDIIxSzczIh2+FWwZWLBpQmRQ==",
+  "header" : {
+    "type" : "responseHeader",
+    "version" : "1.0.0",
+    "action" : "search",
+    "meta" : {
+      "data" : {
+        "dp_id" : "FARMER",
+        "is_sign" : true
+      }
+    },
+    "status" : "succ",
+    "message_id" : "M516-2368-1506-7147-7352",
+    "message_ts" : "2024-02-21T13:02:32+05:30",
+    "total_count" : 3,
+    "sender_id" : "spp.example.org",
+    "receiver_id" : "pymts.example.org",
+    "is_msg_encrypted" : true,
+    "status_reason_code" : "succ",
+    "status_reason_message" : "succ",
+    "completed_count" : 3
+  },
+  "message" : {
+    "transaction_id" : "T912-3365-7126-1762-0583",
+    "correlation_id" : "C282-7271-5963-9194-3894",
+    "search_response" : [ {
+      "reference_id" : "R388-0793-4616-3668-0501",
+      "timestamp" : "2024-02-21T13:02:32+05:30",
+      "status" : "succ",
+      "status_reason_code" : "succ",
+      "status_reason_message" : "succ",
+      "data" : {
+        "version" : "1.0.0",
+        "reg_type" : "ns:FARMER_REGISTRY",
+        "reg_sub_type" : "",
+        "reg_record_type" : "namedQuery",
+        "reg_records" : {
+          "farmer_id" : "F-1",
+          "farmer_name" : "Farmer-name-1",
+          "season" : "2023-xyz",
+          "payment_status" : "paid",
+          "payment_date" : "2023-01-01",
+          "payment_amount" : 400.0
+        }
+      },
+      "pagination" : {
+        "page_size" : 10,
+        "page_number" : 1,
+        "total_count" : 100
+      },
+      "locale" : "en"
+    }, {
+      "reference_id" : "R169-3310-6554-8330-0645",
+      "timestamp" : "2024-02-21T13:02:32+05:30",
+      "status" : "succ",
+      "status_reason_code" : "succ",
+      "status_reason_message" : "succ",
+      "data" : {
+        "version" : "1.0.0",
+        "reg_type" : "ns:FARMER_REGISTRY",
+        "reg_sub_type" : "",
+        "reg_record_type" : "namedQuery",
+        "reg_records" : {
+          "farmer_id" : "F-2",
+          "farmer_name" : "Farmer-name-2",
+          "season" : "2023-xyz",
+          "payment_status" : "paid",
+          "payment_date" : "2023-01-01",
+          "payment_amount" : 9000.0
+        }
+      },
+      "pagination" : {
+        "page_size" : 10,
+        "page_number" : 1,
+        "total_count" : 100
+      },
+      "locale" : "en"
+    }, {
+      "reference_id" : "R275-1663-3216-9239-1611",
+      "timestamp" : "2024-02-21T13:02:32+05:30",
+      "status" : "succ",
+      "status_reason_code" : "succ",
+      "status_reason_message" : "succ",
+      "data" : {
+        "version" : "1.0.0",
+        "reg_type" : "ns:FARMER_REGISTRY",
+        "reg_sub_type" : "",
+        "reg_record_type" : "namedQuery",
+        "reg_records" : {
+          "farmer_id" : "F-3",
+          "farmer_name" : "Farmer-name-3",
+          "season" : "2023-xyz",
+          "payment_status" : "unpaid",
+          "payment_date" : "NA",
+          "payment_amount" : 0.0
+        }
+      },
+      "pagination" : {
+        "page_size" : 10,
+        "page_number" : 1,
+        "total_count" : 100
+      },
+      "locale" : "en"
+    } ]
+  }
+}

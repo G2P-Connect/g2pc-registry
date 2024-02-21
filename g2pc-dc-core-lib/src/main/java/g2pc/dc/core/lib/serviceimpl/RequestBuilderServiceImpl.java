@@ -6,7 +6,6 @@ import g2pc.core.lib.config.G2pUnirestHelper;
 import g2pc.core.lib.constants.CoreConstants;
 import g2pc.core.lib.constants.G2pSecurityConstants;
 import g2pc.core.lib.constants.SftpConstants;
-import g2pc.core.lib.dto.common.cache.CacheDTO;
 import g2pc.core.lib.dto.common.header.HeaderDTO;
 import g2pc.core.lib.dto.common.header.MetaDTO;
 import g2pc.core.lib.dto.common.header.RequestHeaderDTO;
@@ -30,10 +29,11 @@ import g2pc.core.lib.utils.CommonUtils;
 import g2pc.dc.core.lib.service.RequestBuilderService;
 import kong.unirest.HttpResponse;
 import kong.unirest.UnirestException;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -46,9 +46,11 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.text.ParseException;
 
+
 @Service
-@Slf4j
 public class RequestBuilderServiceImpl implements RequestBuilderService {
+
+    private static final Logger log = LoggerFactory.getLogger(RequestBuilderServiceImpl.class);
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -124,7 +126,6 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
         return utility.getSearchCriteriaDTO(queryParamsMap, registrySpecificConfigMap, sortDTOList, paginationDTO, consentDTO, authorizeDTO);
 
     }
-
 
 
     /**
@@ -250,37 +251,6 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
     }
 
     /**
-     *
-     * @param data data to send
-     * @param status status to set
-     * @param protocol protocol to set
-     * @return cacheDto
-     */
-    @Override
-    public CacheDTO createCache(String data, String status, String protocol) {
-        log.info("Save requests in cache with status pending");
-        CacheDTO cacheDTO = new CacheDTO();
-        cacheDTO.setData(data);
-        cacheDTO.setStatus(status);
-        cacheDTO.setProtocol(protocol);
-        cacheDTO.setCreatedDate(CommonUtils.getCurrentTimeStamp());
-        cacheDTO.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
-        return cacheDTO;
-    }
-
-    /**
-     *
-     * @param cacheDTO cacheDTO to save
-     * @param cacheKey  cacheKey refer to save cacheDTO
-     * @throws JsonProcessingException
-     */
-    @Override
-    public void saveCache(CacheDTO cacheDTO, String cacheKey) throws JsonProcessingException {
-        ValueOperations<String, String> val = redisTemplate.opsForValue();
-        val.set(cacheKey, new ObjectMapper().writeValueAsString(cacheDTO));
-    }
-
-    /**
      * Method to save token in cache
      *
      * @param cacheKey cacheKey on which tokenExpiryDto is going to store
@@ -352,7 +322,8 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
      * @throws Exception exception is thrown general because there more than 6 exception being thrown by this method.
      */
    @SuppressWarnings("unchecked")
-    private String createSignature(boolean isEncrypt, boolean isSign,
+   @Override
+    public String createSignature(boolean isEncrypt, boolean isSign,
                                    String requestString, InputStream fis, String encryptionSalt,
                                    String p12Password, String txnType) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -459,7 +430,7 @@ public class RequestBuilderServiceImpl implements RequestBuilderService {
 
     /**
      *
-     * @param txnStatusRequestDTO txnStatusRequestDTO for which status request is creating
+     * @param txnStatusRequestDTO txnStatusRequestDTO for which status request is creating.
      * @return StatusRequestMessageDTO
      */
     @Override
