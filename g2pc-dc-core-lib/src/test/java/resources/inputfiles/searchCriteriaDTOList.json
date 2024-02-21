@@ -1,0 +1,88 @@
+[ {
+  "version" : "1.0.0",
+  "reg_type" : "ns:FARMER_REGISTRY",
+  "reg_sub_type" : "",
+  "query_type" : "namedQuery",
+  "query" : {
+    "query_name" : "paid_farmer",
+    "query_params" : {
+      "farmer_id" : "F-1",
+      "season" : "2023-xyz",
+      "status" : ""
+    }
+  },
+  "sort" : [ {
+    "attribute_name" : "farmer_id",
+    "sort_order" : "asc"
+  } ],
+  "pagination" : {
+    "page_size" : 10,
+    "page_number" : 1
+  },
+  "consent" : {
+    "ts" : null,
+    "purpose" : null
+  },
+  "authorize" : {
+    "ts" : null,
+    "purpose" : null
+  }
+}, {
+  "version" : "1.0.0",
+  "reg_type" : "ns:FARMER_REGISTRY",
+  "reg_sub_type" : "",
+  "query_type" : "namedQuery",
+  "query" : {
+    "query_name" : "paid_farmer",
+    "query_params" : {
+      "farmer_id" : "F-2",
+      "season" : "2023-xyz",
+      "status" : ""
+    }
+  },
+  "sort" : [ {
+    "attribute_name" : "farmer_id",
+    "sort_order" : "asc"
+  } ],
+  "pagination" : {
+    "page_size" : 10,
+    "page_number" : 1
+  },
+  "consent" : {
+    "ts" : null,
+    "purpose" : null
+  },
+  "authorize" : {
+    "ts" : null,
+    "purpose" : null
+  }
+}, {
+  "version" : "1.0.0",
+  "reg_type" : "ns:FARMER_REGISTRY",
+  "reg_sub_type" : "",
+  "query_type" : "namedQuery",
+  "query" : {
+    "query_name" : "paid_farmer",
+    "query_params" : {
+      "farmer_id" : "F-3",
+      "season" : "2023-xyz",
+      "status" : ""
+    }
+  },
+  "sort" : [ {
+    "attribute_name" : "farmer_id",
+    "sort_order" : "asc"
+  } ],
+  "pagination" : {
+    "page_size" : 10,
+    "page_number" : 1
+  },
+  "consent" : {
+    "ts" : null,
+    "purpose" : null
+  },
+  "authorize" : {
+    "ts" : null,
+    "purpose" : null
+  }
+} ]

@@ -10,8 +10,4 @@ class G2pcDcCoreLibraryApplicationTests {
 
 	@Autowired
 	RequestBuilderService requestBuilderService;
-
-	@Test
-	void contextLoads() {
-	}
 }

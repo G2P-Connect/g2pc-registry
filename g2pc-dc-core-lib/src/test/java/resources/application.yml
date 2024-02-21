@@ -66,7 +66,7 @@ sftp:
     user: not_set
     password: not_set
     remote:
-      inbound_directory: /inbound
+      inbound_directory: not_set
 
 sunbird:
   api_urls:
@@ -77,19 +77,3 @@ sunbird:
     host: not_set
     port: not_set
     scheme: not_set
-keycloak:
-  from_dp:
-    farmer:
-      url: not_set
-      clientId: not_set
-      clientSecret: not_set
-
-  dp:
-    url: not_set
-    username: not_set
-    password: cdpi@not_set
-    master:
-      url: not_set
-      getClientUrl: not_set
-      clientId: not_set
-      clientSecret: not_set

@@ -1,0 +1,19 @@
+[ {
+  "0" : "",
+  "farmer_id" : "F-1",
+  "season" : "2023-xyz",
+  "mobile_number" : "9767670151",
+  "farmer_name" : "Farmer-1"
+}, {
+  "0" : "",
+  "farmer_id" : "F-2",
+  "season" : "2023-xyz",
+  "mobile_number" : "9767670152",
+  "farmer_name" : "Farmer-2"
+}, {
+  "0" : "",
+  "farmer_id" : "F-3",
+  "season" : "2023-xyz",
+  "mobile_number" : "9767670153",
+  "farmer_name" : "Farmer-3"
+} ]

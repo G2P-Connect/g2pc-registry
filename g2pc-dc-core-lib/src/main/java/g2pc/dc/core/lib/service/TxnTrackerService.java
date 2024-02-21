@@ -28,8 +28,8 @@ public interface TxnTrackerService {
 
     void saveInitialStatusTransaction(String txnType, String transactionId, String status, String protocol) throws JsonProcessingException;
 
-    G2pcError saveRequestInStatusDB(String requestString, String regType) throws IOException;
+    G2pcError saveRequestInStatusDB(String requestString, String regType , Boolean sunbirdEnabled) throws IOException;
 
-    G2pcError updateStatusTransactionDbAndCache(StatusResponseDTO statusResponseDTO) throws IOException;
+    G2pcError updateStatusTransactionDbAndCache(StatusResponseDTO statusResponseDTO,Boolean sunbirdEnabled) throws IOException;
 
 }

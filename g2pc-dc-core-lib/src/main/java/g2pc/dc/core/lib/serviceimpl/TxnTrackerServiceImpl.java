@@ -153,55 +153,60 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
         String transactionId = messageDTO.getTransactionId();
         g2pcError = new G2pcError(HttpStatus.OK.toString(), "Successfully stored in db");
         if (Boolean.TRUE.equals(sunbirdEnabled)) {
-            Map<String, String> fieldValues = new HashMap<>();
-            fieldValues.put("transaction_id.keyword", transactionId);
-            SearchResponse response = elasticsearchService.exactSearch("response_tracker", fieldValues);
-            if (response.getHits().getHits().length > 0) {
-                log.info("response: {}", response.getHits().getHits()[0].getSourceAsString());
-            } else {
-                ResponseTrackerDto responseTrackerDto = new ResponseTrackerDto();
-                responseTrackerDto.setVersion(headerDTO.getVersion());
-                responseTrackerDto.setMessageId(headerDTO.getMessageId());
-                responseTrackerDto.setMessageTs(headerDTO.getMessageTs());
-                responseTrackerDto.setAction(headerDTO.getAction());
-                responseTrackerDto.setSenderId(headerDTO.getSenderId());
-                responseTrackerDto.setReceiverId(headerDTO.getReceiverId());
-                responseTrackerDto.setIsMsgEncrypted(headerDTO.getIsMsgEncrypted());
-                responseTrackerDto.setTransactionId(transactionId);
-                responseTrackerDto.setRegistryType(regType);
-                responseTrackerDto.setProtocol(protocol);
-                responseTrackerDto.setPayloadFilename(payloadFilename);
-                responseTrackerDto.setInboundFilename(inboundFilename);
-                List<SearchRequestDTO> searchRequestDTOList = messageDTO.getSearchRequest();
-                for (SearchRequestDTO searchRequestDTO : searchRequestDTOList) {
-                    ResponseDataDto responseDataDto = new ResponseDataDto();
-                    responseDataDto.setRegistryTransactionsId(transactionId);
-                    responseDataDto.setReferenceId(searchRequestDTO.getReferenceId());
-                    responseDataDto.setTimestamp(searchRequestDTO.getTimestamp());
-                    responseDataDto.setVersion(searchRequestDTO.getSearchCriteria().getVersion());
-                    responseDataDto.setRegType(searchRequestDTO.getSearchCriteria().getRegType());
-                    responseDataDto.setRegSubType(searchRequestDTO.getSearchCriteria().getRegSubType());
-                    responseDataDto.setStatus(HeaderStatusENUM.PDNG.toValue());
-                    responseDataDto.setStatusReasonCode(g2pcError.getCode());
-                    String responseDataString = objectMapper.writeValueAsString(responseDataDto);
-                    HttpResponse<JsonNode> responseData = Unirest.post(responseDataURL)
-                            .header("Content-Type", "application/json")
-                            .body(responseDataString)
-                            .asJson();
-                    log.info("ResponseData entity response-> " + responseData);
-                    if (responseData.getStatus() != 200) {
-                        g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseData.getBody().toString());
+            try {
+                Map<String, String> fieldValues = new HashMap<>();
+                fieldValues.put("transaction_id.keyword", transactionId);
+                SearchResponse response = elasticsearchService.exactSearch("response_tracker", fieldValues);
+                if (response.getHits().getHits().length > 0) {
+                    log.info("response: {}", response.getHits().getHits()[0].getSourceAsString());
+                } else {
+                    ResponseTrackerDto responseTrackerDto = new ResponseTrackerDto();
+                    responseTrackerDto.setVersion(headerDTO.getVersion());
+                    responseTrackerDto.setMessageId(headerDTO.getMessageId());
+                    responseTrackerDto.setMessageTs(headerDTO.getMessageTs());
+                    responseTrackerDto.setAction(headerDTO.getAction());
+                    responseTrackerDto.setSenderId(headerDTO.getSenderId());
+                    responseTrackerDto.setReceiverId(headerDTO.getReceiverId());
+                    responseTrackerDto.setIsMsgEncrypted(headerDTO.getIsMsgEncrypted());
+                    responseTrackerDto.setTransactionId(transactionId);
+                    responseTrackerDto.setRegistryType(regType);
+                    responseTrackerDto.setProtocol(protocol);
+                    responseTrackerDto.setPayloadFilename(payloadFilename);
+                    responseTrackerDto.setInboundFilename(inboundFilename);
+                    List<SearchRequestDTO> searchRequestDTOList = messageDTO.getSearchRequest();
+                    for (SearchRequestDTO searchRequestDTO : searchRequestDTOList) {
+                        ResponseDataDto responseDataDto = new ResponseDataDto();
+                        responseDataDto.setRegistryTransactionsId(transactionId);
+                        responseDataDto.setReferenceId(searchRequestDTO.getReferenceId());
+                        responseDataDto.setTimestamp(searchRequestDTO.getTimestamp());
+                        responseDataDto.setVersion(searchRequestDTO.getSearchCriteria().getVersion());
+                        responseDataDto.setRegType(searchRequestDTO.getSearchCriteria().getRegType());
+                        responseDataDto.setRegSubType(searchRequestDTO.getSearchCriteria().getRegSubType());
+                        responseDataDto.setStatus(HeaderStatusENUM.PDNG.toValue());
+                        responseDataDto.setStatusReasonCode(g2pcError.getCode());
+                        String responseDataString = objectMapper.writeValueAsString(responseDataDto);
+                        HttpResponse<JsonNode> responseData = Unirest.post(responseDataURL)
+                                .header("Content-Type", "application/json")
+                                .body(responseDataString)
+                                .asJson();
+                        log.info("ResponseData entity response-> " + responseData);
+                        if (responseData.getStatus() != 200) {
+                            g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseData.getBody().toString());
+                        }
                     }
+                    String responseTrackerString = objectMapper.writeValueAsString(responseTrackerDto);
+                    HttpResponse<JsonNode> responseT = Unirest.post(responseTrackerURL)
+                            .header("Content-Type", "application/json")
+                            .body(responseTrackerString)
+                            .asJson();
+                    if (responseT.getStatus() != 200) {
+                        g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseT.getBody().toString());
+                    }
+                    log.info("ResponseTracker entity response-> " + response);
                 }
-                String responseTrackerString = objectMapper.writeValueAsString(responseTrackerDto);
-                HttpResponse<JsonNode> responseT = Unirest.post(responseTrackerURL)
-                        .header("Content-Type", "application/json")
-                        .body(responseTrackerString)
-                        .asJson();
-                if (responseT.getStatus() != 200) {
-                    g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseT.getBody().toString());
-                }
-                log.info("ResponseTracker entity response-> " + response);
+            }
+            catch (Exception e) {
+                g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), e.getMessage());
             }
         } else {
             try {
@@ -374,7 +379,7 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
      * @throws JsonProcessingException jsonProcessingException might be thrown
      */
     @Override
-    public G2pcError saveRequestInStatusDB(String requestString, String regType) throws IOException {
+    public G2pcError saveRequestInStatusDB(String requestString, String regType , Boolean sunbirdEnabled) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(RequestHeaderDTO.class, ResponseHeaderDTO.class, HeaderDTO.class);
 
@@ -382,7 +387,9 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
         HeaderDTO headerDTO = statusRequestDTO.getHeader();
         StatusRequestMessageDTO statusRequestMessageDTO = objectMapper.convertValue(statusRequestDTO.getMessage(), StatusRequestMessageDTO.class);
         String transactionId = statusRequestMessageDTO.getTransactionId();
+
         G2pcError g2pcError = new G2pcError(HttpStatus.OK.toString(), "Successfully stored in db");
+        if(sunbirdEnabled){
         Map<String, String> fieldValues = new HashMap<>();
         fieldValues.put("transaction_id.keyword", transactionId);
         SearchResponse response = elasticsearchService.exactSearch("response_tracker", fieldValues);
@@ -411,7 +418,6 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
             responseDataDto.setAttributeType(txnStatusRequestDTO.getAttributeType());
             responseDataDto.setAttributeValue((String) txnStatusRequestDTO.getAttributeValue());
             responseDataDto.setStatus(HeaderStatusENUM.PDNG.toValue());
-
             String responseDataString = objectMapper.writeValueAsString(responseDataDto);
             HttpResponse<JsonNode> responseD = Unirest.post(responseDataURL)
                     .header("Content-Type", "application/json")
@@ -432,6 +438,39 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
                 return g2pcError;
             }
         }
+        }
+        else {
+            Optional<ResponseTrackerEntity> responseTrackerEntityOptional = responseTrackerRepository.findByTransactionId(transactionId);
+            if (responseTrackerEntityOptional.isEmpty()) {
+                ResponseTrackerEntity responseTrackerEntity = new ResponseTrackerEntity();
+                responseTrackerEntity.setVersion(headerDTO.getVersion());
+                responseTrackerEntity.setMessageId(headerDTO.getMessageId());
+                responseTrackerEntity.setMessageTs(headerDTO.getMessageTs());
+                responseTrackerEntity.setAction(headerDTO.getAction());
+                responseTrackerEntity.setSenderId(headerDTO.getSenderId());
+                responseTrackerEntity.setReceiverId(headerDTO.getReceiverId());
+                responseTrackerEntity.setIsMsgEncrypted(headerDTO.getIsMsgEncrypted());
+                responseTrackerEntity.setTransactionId(transactionId);
+                responseTrackerEntity.setRegistryType(regType);
+
+                TxnStatusRequestDTO txnStatusRequestDTO = statusRequestMessageDTO.getTxnStatusRequest();
+                ResponseDataEntity responseDataEntity = new ResponseDataEntity();
+                responseDataEntity.setTimestamp(null);
+                responseDataEntity.setVersion(null);
+                responseDataEntity.setRegType(null);
+                responseDataEntity.setRegSubType(null);
+                responseDataEntity.setTxnType(txnStatusRequestDTO.getTxnType());
+                responseDataEntity.setAttributeType(txnStatusRequestDTO.getAttributeType());
+                responseDataEntity.setAttributeValue((String) txnStatusRequestDTO.getAttributeValue());
+                responseDataEntity.setStatus(HeaderStatusENUM.PDNG.toValue());
+                responseDataEntity.setResponseTrackerEntity(responseTrackerEntity);
+                responseTrackerEntity.getResponseDataEntityList().add(responseDataEntity);
+
+                responseTrackerRepository.save(responseTrackerEntity);
+            }
+
+
+        }
         return g2pcError;
     }
 
@@ -440,7 +479,7 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
      * @throws JsonProcessingException jsonProcessingException might be thrown
      */
     @Override
-    public G2pcError updateStatusTransactionDbAndCache(StatusResponseDTO statusResponseDTO) throws IOException {
+    public G2pcError updateStatusTransactionDbAndCache(StatusResponseDTO statusResponseDTO , Boolean sunbirdEnabled) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerSubtypes(ResponseHeaderDTO.class, HeaderDTO.class);
         G2pcError g2pcError;
@@ -448,68 +487,101 @@ public class TxnTrackerServiceImpl implements TxnTrackerService {
         StatusResponseMessageDTO statusResponseMessageDTO = objectMapper.convertValue(statusResponseDTO.getMessage(), StatusResponseMessageDTO.class);
         String transactionId = statusResponseMessageDTO.getTransactionId();
         TxnStatusResponseDTO txnStatusResponseDTO = statusResponseMessageDTO.getTxnStatusResponse();
-        Map<String, String> fieldValues = new HashMap<>();
-        fieldValues.put("transaction_id.keyword", transactionId);
-        SearchResponse responseTrackerSearchResponse = elasticsearchService.exactSearch("response_tracker", fieldValues);
-        if (responseTrackerSearchResponse.getHits().getHits().length > 0) {
-            log.info("response: {}", responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString());
-            String responseTrackerDtoString = responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString();
-            Map<String, Object> resultMap = objectMapper.readValue(responseTrackerDtoString, new TypeReference<Map<String, Object>>() {
-            });
+        if (sunbirdEnabled) {
+            Map<String, String> fieldValues = new HashMap<>();
+            fieldValues.put("transaction_id.keyword", transactionId);
+            SearchResponse responseTrackerSearchResponse = elasticsearchService.exactSearch("response_tracker", fieldValues);
+            if (responseTrackerSearchResponse.getHits().getHits().length > 0) {
+                log.info("response: {}", responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString());
+                String responseTrackerDtoString = responseTrackerSearchResponse.getHits().getHits()[0].getSourceAsString();
+                Map<String, Object> resultMap = objectMapper.readValue(responseTrackerDtoString, new TypeReference<Map<String, Object>>() {
+                });
 
-            String osid = resultMap.get(DcConstants.OSID).toString().substring(2);
-            ResponseTrackerDto responseTrackerDto = objectMapper.readerFor(ResponseTrackerDto.class).
-                    readValue(responseTrackerDtoString);
-            String cacheKey = responseTrackerDto.getRegistryType() + "-" + transactionId;
-            ResponseMessageDTO responseMessageDTO = objectMapper.convertValue(txnStatusResponseDTO.getTxnStatus(), ResponseMessageDTO.class);
-            for (SearchResponseDTO searchResponseDTO : responseMessageDTO.getSearchResponse()) {
-                Map<String, String> dataFieldValues = new HashMap<>();
-                dataFieldValues.put("reference_id.keyword", searchResponseDTO.getReferenceId());
-                SearchResponse responseDataSearchResponse = elasticsearchService.exactSearch("response_data", dataFieldValues);
-                if (responseDataSearchResponse.getHits().getHits().length > 0) {
-                    String responseDataDtoString = responseDataSearchResponse.getHits().getHits()[0].getSourceAsString();
-                    Map<String, Object> responseDataResultMap = objectMapper.readValue(responseDataDtoString, new TypeReference<Map<String, Object>>() {
-                    });
-                    String responseDataOsid = responseDataResultMap.get(DcConstants.OSID).toString().substring(2);
-                    ResponseDataDto responseDataDto = objectMapper.readerFor(ResponseDataDto.class).
-                            readValue(responseDataDtoString);
+                String osid = resultMap.get(DcConstants.OSID).toString().substring(2);
+                ResponseTrackerDto responseTrackerDto = objectMapper.readerFor(ResponseTrackerDto.class).
+                        readValue(responseTrackerDtoString);
+                String cacheKey = responseTrackerDto.getRegistryType() + "-" + transactionId;
+                ResponseMessageDTO responseMessageDTO = objectMapper.convertValue(txnStatusResponseDTO.getTxnStatus(), ResponseMessageDTO.class);
+                for (SearchResponseDTO searchResponseDTO : responseMessageDTO.getSearchResponse()) {
+                    Map<String, String> dataFieldValues = new HashMap<>();
+                    dataFieldValues.put("reference_id.keyword", searchResponseDTO.getReferenceId());
+                    SearchResponse responseDataSearchResponse = elasticsearchService.exactSearch("response_data", dataFieldValues);
+                    if (responseDataSearchResponse.getHits().getHits().length > 0) {
+                        String responseDataDtoString = responseDataSearchResponse.getHits().getHits()[0].getSourceAsString();
+                        Map<String, Object> responseDataResultMap = objectMapper.readValue(responseDataDtoString, new TypeReference<Map<String, Object>>() {
+                        });
+                        String responseDataOsid = responseDataResultMap.get(DcConstants.OSID).toString().substring(2);
+                        ResponseDataDto responseDataDto = objectMapper.readerFor(ResponseDataDto.class).
+                                readValue(responseDataDtoString);
 
-                    responseDataDto.setStatus(searchResponseDTO.getStatus());
-                    responseDataDto.setStatusReasonCode(searchResponseDTO.getStatusReasonCode());
-                    responseDataDto.setStatusReasonMessage(searchResponseDTO.getStatusReasonMessage());
-                    responseDataDto.setRegSubType(searchResponseDTO.getData().getRegSubType());
-                    responseDataDto.setRegRecordType(searchResponseDTO.getData().getRegRecordType());
-                    responseDataDto.setRegRecords(objectMapper.writeValueAsString(searchResponseDTO.getData().getRegRecords()));
-                    responseDataDto.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
-                    String responseDataString = objectMapper.writeValueAsString(responseDataDto);
-                    HttpResponse<JsonNode> responseD = Unirest.put(responseDataURL + "/" + responseDataOsid)
-                            .header("Content-Type", "application/json")
-                            .body(responseDataString)
-                            .asJson();
-                    if (responseD.getStatus() != 200) {
-                        g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseD.getBody().toString());
-                        return g2pcError;
+                        responseDataDto.setStatus(searchResponseDTO.getStatus());
+                        responseDataDto.setStatusReasonCode(searchResponseDTO.getStatusReasonCode());
+                        responseDataDto.setStatusReasonMessage(searchResponseDTO.getStatusReasonMessage());
+                        responseDataDto.setRegSubType(searchResponseDTO.getData().getRegSubType());
+                        responseDataDto.setRegRecordType(searchResponseDTO.getData().getRegRecordType());
+                        responseDataDto.setRegRecords(objectMapper.writeValueAsString(searchResponseDTO.getData().getRegRecords()));
+                        responseDataDto.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
+                        String responseDataString = objectMapper.writeValueAsString(responseDataDto);
+                        HttpResponse<JsonNode> responseD = Unirest.put(responseDataURL + "/" + responseDataOsid)
+                                .header("Content-Type", "application/json")
+                                .body(responseDataString)
+                                .asJson();
+                        if (responseD.getStatus() != 200) {
+                            g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseD.getBody().toString());
+                            return g2pcError;
+                        }
                     }
                 }
+                responseTrackerDto.setStatus(headerDTO.getStatus());
+                responseTrackerDto.setStatusReasonCode(headerDTO.getStatusReasonCode());
+                responseTrackerDto.setStatusReasonMessage(headerDTO.getStatusReasonMessage());
+                responseTrackerDto.setTotalCount(headerDTO.getTotalCount());
+                responseTrackerDto.setCompletedCount(headerDTO.getCompletedCount());
+                responseTrackerDto.setCorrelationId(statusResponseMessageDTO.getCorrelationId());
+                responseTrackerDto.setMeta(objectMapper.writeValueAsString(headerDTO.getMeta()));
+                responseTrackerDto.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
+                String responseTrackerString = objectMapper.writeValueAsString(responseTrackerDto);
+                HttpResponse<JsonNode> responseT = Unirest.put(responseTrackerURL + "/" + osid)
+                        .header("Content-Type", "application/json")
+                        .body(responseTrackerString)
+                        .asJson();
+                if (responseT.getStatus() != 200) {
+                    g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseT.getBody().toString());
+                    return g2pcError;
+                }
+                responseHandlerService.updateCache(cacheKey);
             }
-            responseTrackerDto.setStatus(headerDTO.getStatus());
-            responseTrackerDto.setStatusReasonCode(headerDTO.getStatusReasonCode());
-            responseTrackerDto.setStatusReasonMessage(headerDTO.getStatusReasonMessage());
-            responseTrackerDto.setTotalCount(headerDTO.getTotalCount());
-            responseTrackerDto.setCompletedCount(headerDTO.getCompletedCount());
-            responseTrackerDto.setCorrelationId(statusResponseMessageDTO.getCorrelationId());
-            responseTrackerDto.setMeta(objectMapper.writeValueAsString(headerDTO.getMeta()));
-            responseTrackerDto.setLastUpdatedDate(CommonUtils.getCurrentTimeStamp());
-            String responseTrackerString = objectMapper.writeValueAsString(responseTrackerDto);
-            HttpResponse<JsonNode> responseT = Unirest.put(responseTrackerURL + "/" + osid)
-                    .header("Content-Type", "application/json")
-                    .body(responseTrackerString)
-                    .asJson();
-            if (responseT.getStatus() != 200) {
-                g2pcError = new G2pcError(ExceptionsENUM.ERROR_SERVICE_UNAVAILABLE.toValue(), responseT.getBody().toString());
-                return g2pcError;
+        } else {
+            Optional<ResponseTrackerEntity> responseTrackerEntityOptional = responseTrackerRepository.findByTransactionId(transactionId);
+            if (responseTrackerEntityOptional.isPresent()) {
+                ResponseTrackerEntity responseTrackerEntity = responseTrackerEntityOptional.get();
+                String cacheKey = responseTrackerEntity.getRegistryType() + "-" + transactionId;
+                Optional<ResponseDataEntity> entityOptional = responseDataRepository.findByResponseTrackerEntity(responseTrackerEntity);
+                ResponseMessageDTO responseMessageDTO = objectMapper.convertValue(txnStatusResponseDTO.getTxnStatus(), ResponseMessageDTO.class);
+                for (SearchResponseDTO searchResponseDTO : responseMessageDTO.getSearchResponse()) {
+                    if (entityOptional.isPresent()) {
+                        ResponseDataEntity responseDataEntity = entityOptional.get();
+                        responseDataEntity.setStatus(searchResponseDTO.getStatus());
+                        responseDataEntity.setStatusReasonCode(searchResponseDTO.getStatusReasonCode());
+                        responseDataEntity.setStatusReasonMessage(searchResponseDTO.getStatusReasonMessage());
+                        responseDataEntity.setRegSubType(searchResponseDTO.getData().getRegSubType());
+                        responseDataEntity.setRegRecordType(searchResponseDTO.getData().getRegRecordType());
+                        responseDataEntity.setRegRecords(objectMapper.writeValueAsString(searchResponseDTO.getData().getRegRecords()));
+                        responseDataEntity.setLastUpdatedDate(new Timestamp(System.currentTimeMillis()));
+                        responseDataRepository.save(responseDataEntity);
+                    }
+                }
+                responseTrackerEntity.setStatus(headerDTO.getStatus());
+                responseTrackerEntity.setStatusReasonCode(headerDTO.getStatusReasonCode());
+                responseTrackerEntity.setStatusReasonMessage(headerDTO.getStatusReasonMessage());
+                responseTrackerEntity.setTotalCount(headerDTO.getTotalCount());
+                responseTrackerEntity.setCompletedCount(headerDTO.getCompletedCount());
+                responseTrackerEntity.setCorrelationId(statusResponseMessageDTO.getCorrelationId());
+                responseTrackerEntity.setMeta(objectMapper.writeValueAsString(headerDTO.getMeta()));
+                responseTrackerEntity.setLastUpdatedDate(new Timestamp(System.currentTimeMillis()));
+                responseTrackerRepository.save(responseTrackerEntity);
+                responseHandlerService.updateCache(cacheKey);
             }
-            responseHandlerService.updateCache(cacheKey);
         }
         return new G2pcError(HttpStatus.OK.toString(), "Successfully stored in db");
     }
